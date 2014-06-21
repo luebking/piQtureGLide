@@ -1,0 +1,661 @@
+<html>
+  <head>
+    <title>KGLDiaShow - Command Reference</title>
+    <style>
+       a { color:#0080FF; text-decoration:none; padding-left:2pt; padding-right:2pt; }
+       a:hover { background-color:#0080FF; color:#FFFFFF; text-decoration:none; }
+       a:active { background-color:#0080FF; color:#FFFFFF; text-decoration:none; }
+       body { color:#000000; }
+       dt { font-size:large; font-weight:bold; color:#FFFFFF; background-color:#0080FF; padding:6pt; border: medium solid black; border-bottom-style:none; }
+       ol { list-style-type:none; border: thin solid black; padding-bottom:10pt; padding-left:0;}
+       ol:before { display:block; background-color:#DDDDDD; color:#000000; vertical-align:top; padding:4pt; margin-bottom:10pt; font-weight:bold; content:"Parameter: "; }
+       ol li { margin-left:24pt; }
+       ol li:before { font-weight:bold; content:attr( parm )": "; }
+       dd { padding-left:20pt; padding-right:10pt; padding-top:4pt; padding-bottom:8pt; margin-left:0; margin-bottom:8pt; border: medium solid black; border-top-style:none;}
+       h1 { background-color:#0080FF; color:#FFFFFF; padding-left:4pt; padding-right:4pt;/* position:absolute; top:0; left:0; right:0;*/}
+       h2 { background-color:#DDDDDD; color:#000000; padding:4pt; }
+       h3 { background-color:#000000; color:#FFFFFF; padding:4pt; font-size:x-large; font-weight:bold; }
+       code { display:block; padding:10pt; border: thin dashed #BBBBBB; background-color:#DDDDDD; margin:10pt; }
+       code:before {display:block; content:"Example:"; font-weight:bold; border-bottom: thin dashed black; margin-bottom:10pt;}
+       ul {list-style-type:none; /*padding-left:0;*/ }
+       ul ul {list-style-type:square; /*padding-left:20pt;*/ }
+       ul ul ul {list-style-type:disc;}
+       @media screen
+       {
+       body { background-color:#FAFAFA; margin-left:20pt; margin-right:20pt;}
+       span.tableLeft {position:fixed; top:0; left:0; bottom:0; width:10pt; background-color:#999999}
+       span.tableRight {position:fixed; top:0; right:0; bottom:0; width:10pt; background-color:#999999}
+       }
+    </style>
+  </head>
+  <body>
+     <span class="tableLeft"></span>
+     <span class="tableRight"></span>
+     <h1>KGLDiaShow - Command Reference</h1>
+     <p>
+        The KGLDiaShow is an interpreter for simple scripts. It will allow you to show, move, scale, rotate and fade images on top of openGL.
+     </p>
+     <p>
+        If you want a fast introduction and a practical entrance, there should have come a demoscript with this archive.
+     </p>
+     <p>
+        This is the reference documentation for the KGLDiaShow script interpreter.<br/>
+        If anything here does not fit the behaviour of the interpreter, there's something wrong: either in the interpreter or in the documentation.<br/>
+        In this case: mail to <a href="mailto:thomas.luebking@web.de">thomas.luebking@web.de</a>
+     </p>
+     <h2>Index</h2>
+     <ul>
+        <li><a href="#syntax">Syntax</a></li>
+        <li><a href="#cref">Command reference</a></li>
+        <ul>
+           <li><a href="#cc" style="color:#444444; background-color:#FAFAFA; text-decoration:underline;">Control Commands</a></li>
+           <ul>
+              <li><a href="#loop">loop</a>( Times )</li>
+              <li><a href="#endloop">endloop</a>(  )</li>
+              <li><a href="#for">for</a>( var=$img1:$img2:... )</li>
+              <li><a href="#endfor">endfor</a>(  )</li>
+              <li><a href="#wait">wait</a>( msecs )</li>
+              <li><a href="#quit">quit</a>(  )</li>
+              <li><a href="#requireVersion">requireVersion</a>( version )</li>
+              <li><a href="#debug">debug</a>( 0|1 )</li>
+           </ul>
+           <li><a href="#coi" style="color:#444444; background-color:#FAFAFA; text-decoration:underline;">Commands on images</a></li>
+           <ul>
+              <li><a href="#loadImage">loadImage</a>( Path, Variable )</li>
+              <li><a href="#copyImage">copyImage</a>( Image, Variable )</li>
+              <li><a href="#showImage">showImage</a>( Image )</li>
+              <li><a href="#hideImage">hideImage</a>( Image )</li>
+              <li><a href="#rotateImageBy">rotateImageBy</a>( Image, Axis, Degrees, [Time] )</li>
+              <li><a href="#rotateImageTo">rotateImageTo</a>( Image, Axis, Degrees, [Time] )</li>
+              <li><a href="#moveImageBy">moveImageBy</a>( Image, Axis, Percent, [Time] )</li>
+              <li><a href="#moveImageTo">moveImageTo</a>( Image, Axis, Percent, [Time] )</li>
+              <li><a href="#scaleImageBy">scaleImageBy</a>( Image, Percent, [Percent], [Time] )</li>
+              <li><a href="#scaleImageTo">scaleImageTo</a>( Image, Percent, [Percent], [Time] )</li>
+              <li><a href="#setImageAlpha">setImageAlpha</a>( Image, Percent, [Time] )</li>
+              <li><a href="#tintImage">tintImage</a>( Image, Red, Green, Blue, [Time] ), [since 0.6]</li>
+              <li><a href="#setImageBrightness">setImageBrightness</a>( Image, Percent, [Time] ), [since 0.6]</li>
+              <li><a href="#clipImage">clipImage</a>( Image, x, y, width, height ), [since 0.6]</li>
+              <li><a href="#blurImage">blurImage</a>( Image, Percent, [Time] ), [since 0.6]</li>
+              <li><a href="#removeImage">removeImage</a>( Image )</li>
+           </ul>
+           <li><a href="#cots" style="color:#444444; background-color:#FAFAFA; text-decoration:underline;">Commands on the scenery</a></li>
+           <ul>
+              <li><a href="#setCanvasColor">setCanvasColor</a>( Red, Green, Blue )</li>
+              <li><a href="#rotateBy">rotateBy</a>( Axis, Degrees, [Time] )</li>
+              <li><a href="#rotateTo">rotateTo</a>( Axis, Degrees, [Time] )</li>
+              <li><a href="#moveBy">moveBy</a>( Axis, Percent, [Time] )</li>
+              <li><a href="#moveTo">moveTo</a>( Axis, Percent, [Time] )</li>
+              <li><a href="#scaleBy">scaleBy</a>( Percent, [Percent], [Time] )</li>
+              <li><a href="#scaleTo">scaleTo</a>( Percent, [Percent], [Time] )</li>
+           </ul>
+        </ul>
+     </ul>
+     <a name="syntax"></a>
+     <h2>Syntax</h2>
+     <p>
+        <u>Some basic rules:</u>
+        <ul style="list-style-type:disc;">
+           <li>Functions are <b>CaSe SeNsItIvE</b>, e.g. "<span style="color:red;">S</span>caleTo" instead of "<span style="color:green;">s</span>caleTo" will cause an error</li>
+           <li>If you want more than one command per line, commands <b>must</b> be seperated with a '<b>;</b>'</li>
+           <li>Parameters are delimited by a comma '<b>,</b>'</li>
+           <li>You can put in as much whitespace as you wish, but <b>don't linebreak in a command!</b></li>
+           <li>Commands without parameters <i>can</i> be noted without parantheses, i.e. "quit" instead of "quit(  )"</li>
+           <li>Variables are assigned without, but referenced with leading '<b>$</b>', i.e.<br/>loadImage (  file.png, var  ) -&gt; showImage (  $var  )</li>
+           <li>Anything behind a sharp cross '<b>#</b>' is treated as comment, i.e. ignored</li>
+           <li>There's <b>no</b> infix operator, don't search, don't ask ; )</li>
+        </ul>
+        <u>Type notation:</u>
+        <ul style="list-style-type:disc;">
+           <li><b>Integers</b> have no delimiter: "<span style="color:green;">500000</span>", not "<span style="color:red;">5.000.00</span>"</li>
+           <li><b>Floats</b> are delimited with a period: "<span style="color:green;">3.14159265</span>", not "<span style="color:red;">3,14159265</span>"</li>
+           <li><b>Axis</b> is one char out of <span style="color:green;">{X,Y,Z}</span>, not <span style="color:red;">{x,y,z}</span></li>
+           <li><b>Strings</b> can be any char on your keyboard, but keep away from <span style="color:red;"> ),;:( </span> and <span style="color:red;">whitespace</span> ( e.g. use a '<b>_</b>' instead of a blank )</li>
+           <li>There's <b>no</b> escape char, don't search, don't ask ; )</li>
+        </ul>
+        <u>Suggestions:</u>
+        <ul style="list-style-type:disc;">
+           <li>Use the syntax highlight definition for kate/kwrite</li>
+           <li>Indent commands in a ( for )loop</li>
+           <li>Don't leave parantheses</li>
+           <li>Only use several commands per line if it really makes sense</li>
+           <li><b>Comment your code!</b> - not for others, but for later ; )</li>
+           <li>Add a shebang <b>#!/usr/bin/kgldiashow</b> in front of your script</li>
+        </ul>
+     </p>
+     <a name="cref"></a>
+      <h2>Command Reference</h2>
+     <a name="cc"></a>
+     <h3>Control commands</h3>
+     <dl>
+        <!--<dt>assign ( Variable, [Value] )</dt>-->
+        <a name="loop"></a>
+        <dt>loop ( [Times] )</dt>
+        <dd>
+           <ol>
+              <li parm="Times">How many times ( optional )</li>
+           </ol>
+           This starts a loop.<br/>
+           Anything between <a href="#loop">loop(  )</a> and <a href="#endloop">endloop(  )</a> is executed several times<br/>
+           If you leave the parameter the loop runs infinite<br/>
+           If 'Times' is '0', the loop content is skipped.
+           <code>
+              loop( 3 )<br/>
+              &nbsp;&nbsp;&nbsp;scaleImageTo( $image, 100, -1 )<br/>
+              &nbsp;&nbsp;&nbsp;showImage( $image )<br/>
+              &nbsp;&nbsp;&nbsp;scaleImageTo( $image, 50, -1, 5000 )<br/>
+              &nbsp;&nbsp;&nbsp;wait( 4500 )<br/>
+              &nbsp;&nbsp;&nbsp;setImageAlpha( $image, 0, 500 )<br/>
+              &nbsp;&nbsp;&nbsp;wait( 500 )<br/>
+              &nbsp;&nbsp;&nbsp;hideImage( $image )<br/>
+              endloop(  )
+           </code>
+           Loops can be cascaded.
+        </dd>
+        
+        <a name="endloop">
+        </a><dt>endloop (  )</dt>
+        <dd>
+           This ends a loop started with <a href="#loop">loop(  )</a>
+        </dd>
+        
+        <a name="for"></a>
+        <dt>for ( Variable=Image1:Image2:Image3:... )</dt>
+        <dd>
+           <ol>
+              <li parm="Assignment"></li>
+           </ol>
+           This is very usefull if you need to process the same commands on many images ( e.g. to prepare them for action )<br/>
+           The Variable is assigned to each image in the list and then the following instructions are performed on this image.
+           <code>
+              loadImage( konsole.png, konsole )<br/>
+              loadImage( konqueror.png, konqueror )<br/>
+              loadImage( kmail.png, kmail )<br/>
+              loadImage( kwrite.png, kwrite )<br/><br/>
+              for ( image=$konsole:$konqueror:$kmail:$kwrite )<br/>
+              &nbsp;&nbsp;&nbsp;scaleImageTo( $image, 15, -1 )<br/>
+              &nbsp;&nbsp;&nbsp;moveImageTo( $image, 50, -15 )<br/>
+              &nbsp;&nbsp;&nbsp;showImage( $image )<br/>
+              &nbsp;&nbsp;&nbsp;moveImageTo( $image, 50, 115, 3000 )<br/>
+              &nbsp;&nbsp;&nbsp;hideImage( $image )<br/>
+              endfor(  )
+           </code>
+           For loops can be cascaded.
+        </dd>
+        
+        <a name="endfor"></a>
+        <dt>endfor (  )</dt>
+        <dd>
+           This ends a loop started with <a href="#for">for(  )</a>
+        </dd>
+        
+        <a name="wait"></a>
+        <dt>wait ( Milliseconds )</dt>
+        <dd>
+           <ol>
+              <li parm="Milliseconds">The time to wait</li>
+           </ol>
+           This holds the script execution for some time.<br/>
+           <p><b>NOTICE: This has nothing to do with the onscreen action - animations will go on!</b><p/>
+              <a href="#wait">wait(  )</a> allows you to control the animation flow. If you e.g. want to scale an image up, then wait some time and in the end, fade it out:
+           <code>
+              # scale for 5 seconds<br/>
+              scaleImageTo( $image, 80, -1, 5000 )<br/>
+              # wait 4 seconds<br/>
+              wait( 4000 )<br/>
+              # start fade 1 second before scaling ends<br/>
+              setImageAlpha( $image, 0, 1000 )
+           </code>
+        </dd>
+        
+        <a name="quit"></a>
+        <dt>quit (  )</dt>
+        <dd>
+           This exits the script ( otherwise it keeps running, showing the last state )<br/>
+           <b>Don't forget to <a href="#wait">wait(  )</a> until your animations have finished before calling this</b>
+        </dd>
+        
+        <a name="requireVersion"></a>
+        <dt>requireVersion ( Version )</dt>
+        <dd>
+           <ol>
+              <li parm="Version">floating point of the required version</li>
+           </ol>
+           As this API will grow over the time, you must make sure that the version your user is running matches the version you're working on. ( Otherwise ( s )he'll bug you and say your an idiot ; )<br/>
+           Soif you want to make use of commands that were not features of the initial released version ( 0.5 ), you should call this with the number of the highest version you require.
+        </dd>
+        
+        <a name="debug"></a>
+        <dt>debug ( 0|1 )</dt>
+        <dd>
+           <ol>
+              <li parm="0|1">off or on, later versions may support verbosity values ( e.g. 5 talks more than 2 )</li>
+           </ol>
+           This triggers the script debugger to be on or off and can be called anytime in the script to debug your actions
+        </dd>
+     </dl>
+     
+     <a name="coi"><h3>Commands on images</h3></a>
+     <dl>
+        <a name="loadImage"></a>
+        <dt>loadImage ( ImageFile, [Image] )</dt>
+        <dd>
+           <ol>
+              <li parm="ImageFile">Path to the image</li>
+              <li parm="Image">the variable the image is assigned to ( optional )</li>
+           </ol>
+           <p><b>NOTICE: Images are loaded hidden, you must explpicitly <a href="#showImage">showImage(  )</a> them!</b></p>
+           <p>Well, of course one of the first things you want to do, is to load an image ( or more ; )<br/>
+           Qt currently supports jpegs, pngs, bmps and ( probably ) gifs.<p/>
+           <p> To do something with the images, you must be able to reference them.<br/>
+           This is why you better pass the second parameter that may be any kind of string that does NOT contain '( ,;: )' ( those chars are used internal ).</p>
+           If you later want to refer to this variable, you need ( just like in bash or perl ) to prepend a '$'
+           <code>
+              loadImage( wallpaper.png, background )<br/>
+              ...<br/>
+              ...<br/>
+              ...<br/>
+              scaleImageTo( $background, 100 )
+           </code>
+           The imagepath may be relative or full, where the best choice is probably to make it relative to the script.<br/>
+           So assuming you have the script in a subfolder 'script' and the image in a subfolder 'images', you'll have to reenter this directory like:
+           <code>loadImage( ../images/wallpaper.png, background )</code>
+        </dd>
+        
+        <a name="copyImage"></a>
+        <dt>copyImage ( Image, Variable )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to copy</li>
+              <li parm="Variable">the variable the imagecopy is assigned to</li>
+           </ol>
+           <p><b>NOTICE: Images are loaded hidden, you must explpicitly <a href="#showImage">showImage(  )</a> them!</b></p>
+           If you want to use the same image more than once, instead of loading it several times you should better just  copy it.
+           <p style="padding-left:20pt;">
+              1: This is MUCH faster<br/>
+              2: It comsumes no additional TRAM<br/>
+           </p>
+           The image copy is completely independed from the original. It can be scaled, move, rotated, faded, etc. and also removed without affecting the original in any way - they just share the same texture data.
+           <code>
+              copyImage( $image, imagecopy )<br/>
+              ...<br/>
+              removeImage( $imagecopy )<br/>
+              # $image is still available<br/>
+              scaleImageTo( $image, 20, -1, 500 )<br/>
+           </code>
+        </dd>
+        
+        <a name="showImage"></a>
+        <dt>showImage ( Image )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be shown</li>
+           </ol>
+           Shows an image<br/>
+           <p><b>NOTICE: Images are loaded hidden, you must explpicitly showImage(  ) them!</b></p>
+           <code>
+              loadImage( image.png, image ); showImage( $image )
+           </code>
+        </dd>
+        
+        <a name="hideImage"></a>
+        <dt>hideImage ( Image )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be hidden</li>
+           </ol>
+           Hides a previously shown image<br/>
+           <p><b>NOTICE: Hiding an images improves performance over <a href="#setImageAlpha">setImageAlpha( .,0 )</a>!</b></p>
+        </dd>
+        
+        <a name="rotateImageBy"></a>
+        <dt>rotateImageBy ( Image, Axis, Degrees, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be rotated</li>
+              <li parm="Axis">X, Y or Z ( Z is the Axis for 2D rotation )</li>
+              <li parm="Degrees">How much, may be negative or exceed 360° ( float )</li>
+              <li parm="Time">How long the rotation shall last ( optional, Integer )</li>
+           </ol>
+           Rotates the image by some degrees around any 3D Axis relative to it's current rotation and the view rotation.
+           <code>
+              rotateImageBy( $image, Z, 360, 2000 )<br/>
+              # this would cancel the above statment and start from an arbitrary rotation<br/>
+              # rotateImageBy( $image, Z, 360, 4000 )<br/>
+              wait( 2000 )<br/>
+              rotateImageBy( $image, Z, 360, 4000 )
+           </code>
+           <p><b>NOTICE: Image rotation is relative to the scenery rotation!</b></p>
+           <p>
+              <b>NOTICE: Images lie on top of the screen by default,</b><br/> i.e. if you rotate them around the X or Y axis, the part towards you will be clipped ( as it's now "outside" the screen )!<br/>
+              To avoid that, move the scenery "into" the screen, e.g. <a href="#moveTo">moveTo( Z, 2 )</a>
+           </p>
+        </dd>
+        
+        <a name="rotateImageTo"></a>
+        <dt>rotateImageTo ( Image, Axis, Degrees, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be rotated</li>
+              <li parm="Axis">X, Y or Z ( Z is the Axis for 2D rotation )</li>
+              <li parm="Degrees">How much, may be negative or exceed 360° ( float )</li>
+              <li parm="Time">How long the rotation shall last ( optional, Integer )</li>
+           </ol>
+           Rotates the image to a specific degree of rotation around any 3D Axis.
+           <code>
+              # rotate around the vertical axis<br/>
+              rotateImageBy( $image, Y, 360, 2000 )<br/>
+              wait( 500 )<br/>
+              # this will ensure the image is set back to 0°<br/>
+              # no matter where it was when the call was made<br/>
+              rotateImageTo( $image, Y, 0, 1000 )
+           </code>
+           <p><b>NOTICE: Image rotation is relative to the scenery rotation!</b></p>
+           <p>
+              <b>NOTICE: Images lie on top of the screen by default,</b><br/> i.e. if you rotate them around the X or Y axis, the part towards you will be clipped ( as it's now "outside" the screen )!<br/>
+              To avoid that, move the scenery "into" the screen, e.g. <a href="#moveTo">moveTo( Z, 2 )</a>
+           </p>
+        </dd>
+        
+        <a name="moveImageBy"></a>
+        <dt>moveImageBy ( Image, Axis, Percent, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be moved</li>
+              <li parm="Axis">X, Y or Z</li>
+              <li parm="Percent">How far, may be negative or exceed 100 ( float )</li>
+              <li parm="Time">How long the movement shall last ( optional, Integer )</li>
+           </ol>
+           Moves the image on the scenery.
+           <code>
+              # move the image half the screen width to the left<br/>
+              moveImageBy( $image, X, -50, 2000 )<br/>
+              wait( 2000 )<br/>
+              # and back<br/>
+              moveImageTo( $image, X, 50, 2000 )<br/>
+           </code>
+           <p><b>NOTICE: Image movement is relative to the scenery movement!</b></p>
+        </dd>
+        
+        <a name="moveImageTo"></a>
+        <dt>moveImageTo ( Image, Axis, Percent, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be moved</li>
+              <li parm="Axis">X, Y or Z</li>
+              <li parm="Percent">How far, may be negative or exceed 100 ( float )</li>
+              <li parm="Time">How long the movement shall last ( optional, Integer )</li>
+           </ol>
+           Moves the CENTER of the image to a specific position on the scenery.<br/>
+           If you pass values outside [0,100] the center of the image will leave the screen, what can be usefull to slide in images
+           <code>
+              # center the image on the screen<br/>
+              moveImageTo( $image, X, 50 )<br/>
+              moveImageTo( $image, Y, 50 )<br/>
+           </code>
+           <p><b>NOTICE: Image movement is relative to the scenery movement!</b></p>
+        </dd>
+        
+        <a name="scaleImageBy"></a>
+        <dt>scaleImageBy ( Image, Percent, [Percent], [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be scaled</li>
+              <li parm="Percent">[horizontal] scale factor ( float > 0 )</li>
+              <li parm="Percent">vertical scale factor ( optional, float &gt; 0 )</li>
+              <li parm="Time">How long the scale shall last ( optional, Integer )</li>
+           </ol>
+           Scales the image relative to it's current scale.
+           <code>
+              # scale image to 20% of the scenery<br/>
+              scaleImageTo( $image, 20, -1 )<br/>
+              # scale by 150%<br/>
+              scaleImageBy( $image, 150, -1, 2000 )<br/>
+              # the image now takes 30% of the scenery
+           </code>
+           <ul>
+              <li> If only one additional parameter is given, this is taken for both dimensions</li>
+              <li> If only additional parameter 2 is &lt; 0, parameter 1 is taken for both dimensions</li>
+           </ul>
+        </dd>
+        
+        <a name="scaleImageTo"></a>
+        <dt>scaleImageTo ( Image, Percent, [Percent], [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be scaled</li>
+              <li parm="Percent">[horizontal] size relative to the scenery ( float > 0 )</li>
+              <li parm="Percent">vertical size relative to the scenery ( optional, float &gt; 0 )</li>
+              <li parm="Time">How long the scale shall last ( optional, Integer )</li>
+           </ol>
+           Scales the image relative to the SCENERY.
+           <code>
+              # scale image to 20% of the scenery and keep the ratio<br/>
+              scaleImageTo( $image, 20, -1 )<br/>
+              # scale image to 20% of the scenery with and 20% of the height ( regardless of the image dimensions )<br/>
+              scaleImageTo( $image, 20, 20 )<br/>
+           </code>
+           <ul>
+              <li> If only one additional parameter is given, this is taken for both dimensions</li>
+              <li> If the second additional parameter is &lt; 0, the original aspect ratio is kept</li>
+           </ul>
+        </dd>
+        
+        <a name="tintImage"></a>
+        <dt>tintImage ( Image, Red, Green, Blue, [Time] ), [since 0.6]</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be tinted</li>
+              <li parm="Percent"> Opacity, 0 is transparent, 100 opaque ( float )</li>
+              <li parm="Time">How long the fade shall last ( optional, Integer )</li>
+           </ol>
+        </dd>
+        <a name="setImageBrightness"></a>
+        <dt>setImageBrightness ( Image, Percent, [Time] ), [since 0.6]</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be lightned/darkened</li>
+              <li parm="Percent"> Opacity, 0 is transparent, 100 opaque ( float )</li>
+              <li parm="Time">How long the fade shall last ( optional, Integer )</li>
+           </ol>
+        </dd>
+        <a name="clipImage"></a>
+        <dt>clipImage ( Image, x, y, width, height ), [since 0.6]</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be clipped</li>
+              <li parm="Percent"> Opacity, 0 is transparent, 100 opaque ( float )</li>
+              <li parm="Time">How long the fade shall last ( optional, Integer )</li>
+           </ol>
+        </dd>
+        <a name="blurImage"></a>
+        <dt>blurImage ( Image, Percent, [Time] ), [since 0.6]</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be blurred</li>
+              <li parm="Percent"> Opacity, 0 is transparent, 100 opaque ( float )</li>
+              <li parm="Time">How long the fade shall last ( optional, Integer )</li>
+           </ol>
+        </dd>
+        <a name="setImageAlpha"></a>
+        <dt>setImageAlpha ( Image, Percent, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be scaled</li>
+              <li parm="Percent"> Opacity, 0 is transparent, 100 opaque ( float )</li>
+              <li parm="Time">How long the fade shall last ( optional, Integer )</li>
+           </ol>
+           Moves the CENTER of the image to a specific position on the scenery.<br/>
+           If you pass values outside [0,100] the center of the image will leave the screen, what can be usefull to slide in images
+           <code>
+              setImageAlpha( $image, 0 )<br/>
+              showImage( $image )<br/>
+              # fade in to 70%<br/>
+              setImageAlpha( $image, 70, 2000 )<br/>
+              # don't forget to wait
+              wait( 2000 )
+              # fade out
+              setImageAlpha( $image, 0, 2000 )<br/>
+           </code>
+        </dd>
+        
+        <a name="removeImage"></a>
+        <dt>removeImage ( Image )</dt>
+        <dd>
+           <ol>
+              <li parm="Image">The image to be removed</li>
+           </ol>
+           Removes an image.<br/>
+           Though this is not necessary as all images are auto-removed when the script exits, it can be usefull to save TRAM ( Texture memory of the GPU ) if you want to load a bunch of images and can remove some of them in the mid of action.
+           <code>
+              loadImage( image.png, image )<br/>
+              ...<br/>
+              ...<br/>
+              removeImage( $image )<br/>
+              # $image can now be reassigend
+              ...<br/>
+              ...<br/>
+              quit(  )
+           </code>
+        </dd>
+     </dl>
+     <a name="cots"></a>
+     <h3>Commands on the scenery</h3>
+     <dl>
+        <a name="setCanvasColor"></a>
+        <dt>setCanvasColor ( Red, Green, Blue )</dt>
+        <dd>
+           <ol>
+              <li parm="Red">red part of the color</li>
+              <li parm="Green">green part of the color</li>
+              <li parm="Blue">blue part of the color</li>
+           </ol>
+           The three values must be integers ranged [0,255].<br/>
+           The higher a value is, the more impact has this color.<br/>
+           E.g. ( 255,0,0 ) is fully red, ( 0,0,0 ) is black, ( 255,255,255 ) is white, ( 0,255,255 ) is cyan.<br/>
+           The default canvas color is black.
+        </dd>
+        
+        <a name="rotateBy"></a>
+        <dt>rotateBy ( Axis, Degrees, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Axis">X, Y or Z ( Z is the Axis for 2D rotation )</li>
+              <li parm="Degrees">How much, may be negative or exceed 360° ( float )</li>
+              <li parm="Time">How long the rotation shall last ( optional, Integer )</li>
+           </ol>
+           Rotates the whole scenery by some degrees around any 3D Axis relative to it's current rotation.
+           <code>
+              rotateBy( Z, 360, 2000 )<br/>
+              # this would cancel the above statment and start from an arbitrary rotation<br/>
+              # rotateImageBy( Z, 360, 4000 )<br/>
+              wait( 2000 )<br/>
+              rotateImageBy( Z, 360, 4000 )
+           </code>
+           <p>
+              <b>NOTICE: The scenery lies on top of the screen by default,</b><br/> i.e. if you rotate them around the X or Y axis, the part towards you will be clipped ( as it's now "outside" the screen )!<br/>
+              To avoid that, move the scenery "into" the screen, e.g. <a href="#moveTo">moveTo( Z, 2 )</a>
+           </p>
+        </dd>
+        
+        <a name="rotateTo"></a>
+        <dt>rotateTo ( Axis, Degrees, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Axis">X, Y or Z ( Z is the Axis for 2D rotation )</li>
+              <li parm="Degrees">How much, may be negative or exceed 360° ( float )</li>
+              <li parm="Time">How long the rotation shall last ( optional, Integer )</li>
+           </ol>
+           Rotates the whole scenery to a specific degree of rotation around any 3D Axis.
+           <code>
+              # rotate around the vertical axis<br/>
+              rotateBy( Y, 360, 2000 )<br/>
+              wait( 500 )<br/>
+              # this will ensure the rotation is set back to 0°<br/>
+              # no matter where it was when the call was made<br/>
+              rotateTo( Y, 0, 1000 )
+           </code>
+           <p>
+              <b>NOTICE: The scenery lies on top of the screen by default,</b><br/> i.e. if you rotate them around the X or Y axis, the part towards you will be clipped ( as it's now "outside" the screen )!<br/>
+              To avoid that, move the scenery "into" the screen, e.g. <a href="#moveTo">moveTo( Z, 2 )</a>
+           </p>
+        </dd>
+        
+        <a name="moveBy"></a>
+        <dt>moveBy ( Axis, Percent, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Axis">X, Y or Z</li>
+              <li parm="Percent">How far, may be negative or exceed 100 ( float )</li>
+              <li parm="Time">How long the movement shall last ( optional, Integer )</li>
+           </ol>
+           Moves the scenery around the screen.
+           <code>
+              # move the scenery half it's width to the left<br/>
+              moveBy( X, -50, 2000 )<br/>
+              wait( 2000 )<br/>
+              # and back<br/>
+              moveTo( X, 50, 2000 )<br/>
+           </code>
+           <p><b>NOTICE: Scenery movement distance is relative to the scenery scale!</b></p>
+        </dd>
+        
+        <a name="moveTo"></a>
+        <dt>moveTo ( Axis, Percent, [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Axis">X, Y or Z</li>
+              <li parm="Percent">How far, may be negative or exceed 100 ( float )</li>
+              <li parm="Time">How long the movement shall last ( optional, Integer )</li>
+           </ol>
+           Moves the CENTER of the scenery to a specific position on the screen.<br/>
+           If you pass values outside [0,100] the center of the scenery will leave the screen, what can be usefull to slide in effects
+           <code>
+              # center the scenery on the screen<br/>
+              moveTo( X, 50 )<br/>
+              moveTo( Y, 50 )<br/>
+           </code>
+        </dd>
+        
+        <a name="scaleBy"></a>
+        <dt>scaleBy ( Percent, [Percent], [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Percent">[horizontal] scale factor ( float > 0 )</li>
+              <li parm="Percent">vertical scale factor ( optional, float &gt; 0 )</li>
+              <li parm="Time">How long the scale shall last ( optional, Integer )</li>
+           </ol>
+           Scales the scenery relative to it's current scale.
+           <code>
+              # scale scenery to 20% of the screen<br/>
+              scaleTo( 20, -1 )<br/>
+              # scale by 150%<br/>
+              scaleBy( 150, -1, 2000 )<br/>
+              # the scenery now takes 30% of the screen
+           </code>
+           <ul>
+              <li> If only one additional parameter is given, this is taken for both dimensions</li>
+              <li> If only additional parameter 2 is &lt; 0, parameter 1 is taken for both dimensions</li>
+           </ul>
+        </dd>
+              
+        <a name="scaleTo"></a>
+        <dt>scaleTo ( Percent, [Percent], [Time] )</dt>
+        <dd>
+           <ol>
+              <li parm="Percent">[horizontal] size relative to the scenery ( float > 0 )</li>
+              <li parm="Percent">vertical size relative to the scenery ( optional, float &gt; 0 )</li>
+              <li parm="Time">How long the scale shall last ( optional, Integer )</li>
+           </ol>
+           Scales the scenery relative to the SCREEN.
+           <code>
+              # scale scenery to 20% of the screen<br/>
+              scaleImageTo( $image, 20 )<br/>
+           </code>
+           <ul>
+              <li> If only one additional parameter is given, this is taken for both dimensions</li>
+              <li> If only additional parameter 2 is &lt; 0, parameter 1 is taken for both dimensions</li>
+           </ul>
+        </dd>
+      </dl>
+  </body>
+</html>

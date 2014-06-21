@@ -1,0 +1,12 @@
+#!/usr/bin/kgldiashow
+requireVersion(0.6)
+loadImage(bugatti.jpg, bug1)
+copyImage($bug1, bug2)
+copyImage($bug1, bug3)
+removeImage($bug2)
+copyImage($bug1, bug2)
+clipImage ( $bug3, 535, 422, 347, 220 )
+showImage($bug1); showImage($bug3)
+blurImage($bug1,85,2000)
+wait(10000)
+quit

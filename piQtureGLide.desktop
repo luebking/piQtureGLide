@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=piQtureGLide
+Comment=OpenGL Image viewer
+GenericName=OpenGL Image viewer
+Exec=piQtureGLide
+Terminal=false
+Categories=Application;Qt;Image;
+StartupNotify=false

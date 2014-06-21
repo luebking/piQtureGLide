@@ -1,0 +1,9 @@
+You'll need Qt4 (>= 4.3?)
+
+qmake piQtureGLide.pro && make
+sudo install piQtureGLide /usr/local/bin
+
+the diashow script thing is there for historic reasons and may be polishe or removed in further releases
+
+you can install the kgldiashow.xml dtd to have a better syntax highlightning for the diashow scrip language
+file goes to $KDEDIR/share/apps/katepart/syntax - your local $KDEDIR is usually ~/.kde

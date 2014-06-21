@@ -1,0 +1,524 @@
+#!/usr/bin/kgldiashow
+# hi and hallo to the kgldiashow demo script
+# as you can see, everything behind a '#' is handled as comment, i.e. completely ignored by the script interpreter
+
+# the top line is a 'shebang' - it tells shells which application to use to execute this script
+# it's not a necessary line, but if you add it and
+# make this script executable (chmod +x) you can run the diashow
+# by simply clicking it like a binary executable
+
+# ok, let's start our little tutorial
+# HINT: if you're using any katepart (kate, kwrite, konqueror's katepart for textviewing)
+# you can install the kgldiashow.xml dtd to have a better syntax highlightning
+# file goes to $KDEDIR/share/apps/katepart/syntax - your local $KDEDIR is usually ~/.kde
+
+requireVersion(0.5)
+# this command is currently not really required, but will be usefull for later versions which may support
+# more commands. The version since when a command is available is noted in the command reference
+
+
+# first we're gonna load the images
+# this is a good idea, as there's currently no thread support
+# i.e. loading an image will probably block the animation when done later
+# even if there was thread support, you could not operate on a not loaded image
+# and it will take around 200ms to load a jpg from disk to TRAM (most of the time goes to the disk access)
+
+#scaleTo(50)
+# moveTo(Y, 100, 5000)
+
+loadImage(bg.jpg, bg)
+# this command loads the image bg.jpg - you can use a complete or relative path
+# as the bg.jpg file comes in the same dir as this script, i can use the relative path
+# if it was in another subdir i'd have e.g. called 'loadImage(images/bg.jpg)'
+
+# loading an image is nice, but you want to do some things to it,
+# so you assign the last loaded image to a variable 'bg'
+# this is like you'd call 'bg=loadImage(bg.jpg)', but i wasn't in the mood to
+# implement complex things like infix operators ;)
+
+# now let's load the other images
+
+loadImage(void.png, void)
+loadImage(earth.png, earth)
+loadImage(water.png, water)
+loadImage(fire.png, fire)
+loadImage(wind.png, wind)
+
+# you may have noticed that you don't have to finish commands with an ';'
+# however you can and may want to call several commands per line
+# in this case you need to separate them with ';' - just like in e.g. bash
+
+loop(2)
+# YES - this means looping. there's a very simple but effective flow control
+# 'loop(2)' will recall the included code two times (pretty easy, ehh? ;)
+# if you leave the parameter, e.g. just call 'loop' or pass a negative value,
+# the loop will run infinite
+
+   scaleImageTo($bg, 500)
+   # next new command - scales images to a specific size
+   # the first parameter is the image (which we just stored to bg)
+   # if you want to acces a PREVIOUSLY assigned variable, you need to prepend a '$'
+   # again similar to bash or perl
+   # the second parameter must be given - it's the scaling factor in percent
+   # and will be used for both axes in this case (later more)
+   
+   setImageAlpha($bg, 0)
+   # this makes the image fully transparent, while 'setImageAlpha($bg, 100)' would set it to be opaque
+   # you can use any floting point value between (like '66.666')
+   
+   for(img=$earth:$water:$fire:$wind)
+   # WOWOWWW - more flow control!
+   # Ok, it's currently the only other flow control function... :\ - nice anyway
+   # if you need to perform the same operation on several
+   # images you can use the for(image=image1:image2:...) structure
+      scaleImageTo($img, 15, -1)
+      # you allready know this command, but here we introduce a third parameter
+      # if you pass a third parameter, you can scale the image vertically in another way than horizontally
+      # if you however pass a negative value, (the values are in percent, you cannot scale to a negative factor)
+      # the current aspect ratio will just be kept (i.e. the image won't be squeezed)
+   
+      setImageAlpha($img, 0)
+      
+      moveImageTo($img, X, 50)
+      moveImageTo($img, Y, 50)
+      # this moves the center point of the image to a certain position on the screen.
+      # the range is in percent [0,100] - any value outside these borders will move the CENTER of the
+      # image off the screen (usefull if you e.g. want to slide in the image)
+   endfor
+   
+   # center the void kanji
+   # this is necessary as it's displaced later on and we must not forget to
+   # recenter it again for every loop
+   moveImageTo($void, X, 50)
+   moveImageTo($void, Y, 50)
+   scaleImageTo($void, 5, -1)
+   setImageAlpha($void, 0)
+   
+   showImage($bg)
+   # now show the background - every image is hidden when loaded and MUST be EXPLICITLY shown to be visible
+   
+   setImageAlpha($bg, 100, 1000)
+   # AHA! for the first time we trigger some animated action
+   # the third parameter is the time the command shall last in ms
+   # this just fades in the background within one second
+   
+   wait(500)
+   # waiting is necessary for animation control. the script just waits for the given time until the next command is executed
+   # this has NOTHING to do with the onscreen action
+   
+   scaleImageTo($bg, 100, -1, 13000)
+   # scale the bg to 100% of the screen width in 13 secs
+   
+   # now lets fade in the void kanji
+   showImage($void)
+   scaleImageTo($void, 50, -1, 8000)
+   setImageAlpha($void, 10, 8000)
+   moveImageTo($void, X, 60)
+   
+   # the following loop calls 4 kanjis to fade in, blow up and fade out
+   for(img=$earth:$water:$fire:$wind)
+      showImage($img)
+      scaleImageTo($img, 30, -1, 2000)
+      setImageAlpha($img, 70, 1000)
+      wait(1000)
+      setImageAlpha($img, 0, 1000)
+      wait(1000)
+      hideImage($img)
+   endfor
+   
+   # here we're gonna reposition the 4 kanjis
+   for(img=$earth:$water:$fire:$wind)
+      moveImageTo($img, X, 20)
+      scaleImageTo($img, 10, -1)
+      setImageAlpha($img, 0)
+   endfor
+   
+   moveImageTo($earth, Y, 20)
+   moveImageTo($water, Y, 40)
+   moveImageTo($fire, Y, 60)
+   moveImageTo($wind, Y, 80)
+   
+   
+   # and show them up in a line again
+   for(img=$earth:$water:$fire:$wind)
+      showImage($img)
+      scaleImageTo($img, 12, -1, 500)
+      setImageAlpha($img, 40, 1000)
+      wait(300)
+   endfor
+      
+   # fade out action
+   wait(3000)
+#    moveTo(Y, 0, 5000)
+   setImageAlpha($bg, 0, 3000)
+   wait(3000)
+
+endloop # ends our main loop
+   
+removeImage($bg)
+removeImage($earth)
+removeImage($water)
+removeImage($fire)
+# remove the loaded images
+# this is not really necessary in our case as they're removed on exit anyway
+# but you might it usefull to clean up space on bigger projects, and this is how it's done
+
+quit
+
+# don't forget to add a CR at the end of the text
+
+# that's it - you read to the demo script
+# there're more commands available that those presented here
+# read the command reference to see them all with a short description and possible parameters
+#  good bye
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# no really, you can stop reading now - it's out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# sure you actually /can/ read? ;)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# buy musashi's go rin no sho, or download it from project gutenberg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# of course you should first learn to read
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# it's off....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# no really.......
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# you start to annoy me.....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# STOP, i mean S-T-O-P READING NOW!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# here's end =)
