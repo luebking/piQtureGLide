@@ -1,21 +1,21 @@
-/* QGLImageViewer.h v0.2 - This file is NOT part of KDE ;)
-   Copyright(C) 2006 Thomas L�bking <thomas.luebking@web.de>
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or(at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-*/
+/*  This file is NOT part of KDE ;)
+ *  Copyright (C) 2006-2014 Thomas Lübking <thomas.luebking@gmail.com>
+ *
+ *  This application is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Library General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or ( at your option ) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Library General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Library General Public License
+ *  along with this library; see the file COPYING.LIB.  If not, write to
+ *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA 02110-1301, USA.
+ */
 
 #ifndef KGLIMAGEVIEWER_H
 #define KGLIMAGEVIEWER_H
@@ -75,14 +75,14 @@ public:
    */
    QGLImageViewer( QWidget* parent, const char* name, float fps = 25, bool interactive = true);
    ~QGLImageViewer();
-   
+
    /**
    * Whether the user may influence the view using the mouse cursor
    *
    * @param interactive Yes or No ;)
    */
    inline void setInteractive(bool interactive = true){ _interactive = interactive; }
-   
+
    /**
    * Sets the canvas, i.e. glClear Color(the background where no images appear... defaults to black)
    *
@@ -90,28 +90,28 @@ public:
    * @param update Whether to update the view right after updating the color
    */
    void setCanvas(const QColor & color, bool update = true);
-   
+
    /**
    * The position of the viewer
    *
    * @param a On which axis
    */
    inline float position(Axis a) const { return _translation[a]; }
-   
+
    /**
    * The rotation of the viewer
    *
    * @param a On which axis
    */
    inline float rotation(Axis a) const { return _rotation[a]; }
-   
+
    /**
    * The scale of the view
    *
    * @param a On which axis
    */
    inline float scaleFactor(Axis a) const { return _scale[a]; }
-   
+
    /**
    * Rotate by some degrees(accumulating)\n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped
@@ -121,7 +121,7 @@ public:
    * @param msecs How long the rotation shall last, the default is 0 - thus the new rotation is reached immediately. NOTICE: that rotation() will allways respond the current value, not the final value, while the rotation is active
    */
    void rotate(Axis a, float degrees, int msecs = 0);
-   
+
    /**
    * Rotate around all three axes(accumulating)\n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped
@@ -132,7 +132,7 @@ public:
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void rotate(float xDegrees, float yDegrees, float zDegrees, bool update = true);
-   
+
    /**
    * Rotate by some degrees(NOT accumulative)\n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped
@@ -142,7 +142,7 @@ public:
    * @param msecs How long the rotation shall last, the default is 0 - thus the new rotation is reached immediately. NOTICE: that rotation() will allways respond the current value, not the final value, while the rotation is active
    */
    void rotateTo(Axis a, float degrees, int msecs = 0);
-   
+
    /**
    * Rotate around all three axes(NOT accumulative)\n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped
@@ -153,7 +153,7 @@ public:
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void rotateTo(float xDegrees, float yDegrees, float zDegrees, bool update = true);
-   
+
    /**
    * Scale by some percent(accumulating)
    *
@@ -162,16 +162,16 @@ public:
    * @param msecs How long the scaling shall last, the default is 0 - thus the new scale is reached immediately. NOTICE: that scacleFactor() will allways respond the current value, not the final value, while scaling is active
    */
    void scale(Axis a, float percent, int msecs = 0);
-   
+
    /**
    * Scale X and Y axis by some percent(accumulating)
    *
-   * @param yPercent 
+   * @param yPercent
    * @param xPercent How much. Values should be positive. Scales accumulative, i.e. if your view was previously scaled to 80% scale(X, 50%); will end up with a 40% scaled view
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void scale(float xPercent, float yPercent, bool update = true);
-   
+
    /**
    * Scale by some percent(NOT accumulative)
    *
@@ -183,18 +183,18 @@ public:
    /**
    * Scale X and Y axis by some percent(NOT accumulative)
    *
-   * @param yPercent 
+   * @param yPercent
    * @param xPercent How much. Values should be positive. Scales accumulative, i.e. if your view was previously scaled to 80% scale(X, 50%); will end up with a 50% scaled view
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void scaleTo(float xPercent, float yPercent, bool update = true);
-   
-   
+
+
    void move(Axis a, float percent, int msecs = 0);
    void move(float xPercent, float yPercent, float zPercent, bool update = true);
    void moveTo(Axis a, float percent, int msecs = 0);
    void moveTo(float xPercent, float yPercent, float zPercent, bool update = true);
-   
+
    /**
    * Display a message(string)
    * @param x The X offset in pixels
@@ -205,7 +205,7 @@ public:
    */
    void message( int x, int y, QString message, int msecs, const QColor *color = 0L );
    void hideMessage();
-   
+
 #if 0
    /**
    * Draws a rect.(HUD, it's no way translated)
@@ -230,7 +230,7 @@ public:
    * @return the id of the just loaded image
    */
    uint load( const QGLImage& image, bool show = false );
-   
+
    /**
    * Load an image from a QImage \n
    * It can be accessed as images().last() as long as no other Image was loaded
@@ -257,7 +257,7 @@ public:
    * @param show The Image is not displayed unless this flag is true or it's explicitly shown later(see QGLImage::show())
    */
    uint load( const QPixmap& pix, bool show = false, int numPol = 1);
-   
+
    /**
    * Removes the image with the id(glObject()) id from view \n
    * The function handles the GLlist containing the image \n
@@ -266,23 +266,23 @@ public:
    * @param id the images glObject()
    */
    void remove(uint id);
-   
+
    /**
    * The FPS delay, i.e. after how many milliseconds the screen is updated in animations(1000/fps)
    */
    int fpsDelay() {return _fpsDelay;}
-   
+
    inline bool providesShaders(){return _providesShaders; }
-   
+
    typedef QList<QGLImage> QGLImageList;
 
    /**
    * A QValueList of all currently loaded QGLImages
    */
    QGLImageList &images() {return _images;}
-   
+
    /*inline */bool isTimerActive() const;
-   
+
    /**
    * Loads a vertex or fragment shader
    * Returns the shader id(all shaders a stored in the shaders()) or 0 if shader could not be created from file
@@ -291,13 +291,13 @@ public:
    *@param shaderType use GL_VERTEX_SHADER_ARB(vertexshader) or GL_FRAGMENT_SHADER_ARB(pixelshader)
    */
    GLhandleARB loadShader(QString file, GLenum shaderType);
-   
+
    /**
    * Returns a list of all available shader programs
    */
    inline ShaderList &shaders() { return _shaders; };
    inline bool animated() { return _animated; }
-   
+
 public slots:
    /**
    * Reimplemented to skip if timer is active, i.e. we have an animation
@@ -308,17 +308,17 @@ protected:
    friend class QGLImage;
    void ensureTimerIsActive();
    virtual void mergeCnB(QGLImage & img);
-   
+
    /**
    * Reimplemented from QGLWidget
    */
    virtual void initializeGL();
-   
+
    /**
    * Reimplemented from QGLWidget, you may want to reimplement it yourself to change the scene rendering
    */
    virtual void paintGL();
-   
+
    /**
    * Reimplemented from QGLWidget, you may want to reimplement it yourself to change the behaviour on resizes
    */
@@ -328,27 +328,27 @@ protected:
    * Reimplemented from QWidget for the interaction feature
    */
    virtual void mousePressEvent( QMouseEvent *e );
-   
+
    /**
    * Reimplemented from QWidget for the interaction feature
    */
    virtual void mouseReleaseEvent( QMouseEvent *e );
-   
+
    /**
    * Reimplemented from QWidget for the interaction feature
    */
    virtual void mouseMoveEvent( QMouseEvent *e );
 
    /**
-    * 
+    *
     */
    virtual void timerEvent( QTimerEvent *e );
-   
+
    /**
    * Not really reimplemented from QWidget yet
    */
    virtual void wheelEvent( QWheelEvent *e );
-   
+
    void blur(QGLImage &img);
 
 private:
@@ -358,29 +358,29 @@ private:
    GLfloat _scale[3];
    GLfloat _desiredScale[3];
    GLfloat _scaleStep[3];
-   
+
    GLfloat _translation[3];
    GLfloat _desiredTranslation[3];
    GLfloat _translationStep[3];
-   
+
    GLfloat _rotation[3];
    GLfloat _desiredRotation[3];
    GLfloat _rotationStep[3];
-   
+
    QStringList _message;
    QPoint _messagePos;
    int _messageTimeOut;
    GLfloat _messageColor[4];
-   
+
    QPoint _lastPos;
    float _scaleTarget[2];
-   
+
    uint _fpsDelay;
    int _activeAnimations;
    int _timer;
-   
+
    float _canvasColor[3];
-   
+
    /* HUD rect */
    int _rectCoords[4];
    float _rectColor[3];
@@ -391,13 +391,13 @@ private:
 
    QGLPixelBuffer *_pbuffer;
    bool _interactive;
-   
+
    ShaderList _shaders;
    bool _providesShaders;
    bool _animated;
    float _animCounter;
-   
-   
+
+
 private:
    void handleAnimationsPrivate(float(*value)[3], float(*desiredValue)[3], float(*valueStep)[3], int *animCounter);
    uint newUniqueId();
@@ -425,46 +425,46 @@ public:
    */
 //    ~QGLImage();
 #endif
-   
+
    /**
    * Returns the current onscreen pixelwidth \n
    * NOTICE: This value changes as soon as the image or the view are translated on the Z axis, scaled or the view is resized. \n
    * You need to recall it if you need it after such operation.
    */
    int width() const;
-   
+
    /**
    * Returns the current onscreen pixelheight \n
    * NOTICE: This value changes as soon as the image or the view are translated on the Z axis, scaled or the view is resized. \n
    * You need to recall it if you need it after such operation.
    */
    int height() const;
-   
+
    /**
    * Returns the original width of the image in pixles \n
    * different from width() this value stays the same all the time, no matter which operations on the image are performed
    */
    inline int basicWidth() const { return _basicWidth; }
-   
+
    /**
    * Returns the original height of the image in pixles \n
    * different from height() this value stays the same all the time, no matter which operations on the image are performed
    */
    inline int basicHeight() const { return _basicHeight; }
-   
+
    /**
    * Returns the current alpha level of the image \n
    * NOTICE: if the alpha value is set animated, this is NOT the final but allways the CURRENT!!! alpha value
    */
    inline float alpha() const { return _colorI[3]*100.0; }
-   
+
    /**
    * Whether the Image has an alpha channel \n
    * NOTICE: this differs from the above function! hasAlpha() does NOT refer to the alpha value that you can setAlpha(), but if the original image comes with an active alpha channel(like an icon etc.)\n
    * if you want a help on taking a decision about the canvas color, THIS is the proper function
    */
    inline bool hasAlpha() const { return _hasAlpha; }
-   
+
    /**
    * Sets the internal color.\n
    * WANRNING: the internal color is updated as soon as QGLImageViewer::mergeCnB() is called.
@@ -478,7 +478,7 @@ public:
       _colorI[1] =((float)color.green())/255.0;
       _colorI[2] =((float)color.blue())/255.0;
    }
-   
+
    /**
    * Returns the current tint color of the image \n
    * NOTICE: if the color is set animated, this is NOT the final but allways the CURRENT!!! color
@@ -490,41 +490,41 @@ public:
    * NOTICE: if the brightness is set animated, this is NOT the final but allways the CURRENT!!! color
    */
    inline float brightness() const { return _brightness*100.0; }
-   
+
    /**
    * Returns the current position of the image on axis a \n
    * NOTICE: if the image is moved animated, this is NOT the final but allways the CURRENT!!! position
    */
    inline float position(Axis a) const { return _translation[a]; }
-   
+
    /**
    * Returns the current rotation of the image(degrees, may be negative) \n
    * NOTICE: if the image is rotated animated, this is NOT the final but allways the CURRENT!!! rotation
    */
    inline float rotation(Axis a) const { return _rotation[a]; }
-   
+
    /**
    * Returns the current scale of the image(percent, allways positive) \n
    * NOTICE: if the image is scaled animated, this is NOT the final but allways the CURRENT!!! scale
    */
    inline float scaleFactor(Axis a) const { return _scale[a]; }
-   
+
    /**
    * Returns the OpenGL index of this image \n
    * NOTICE: as long as you don't use flat copies of the image, this is unique - OTHERWISE NOT!
    */
    inline GLuint glObject() const { return _object; }
    inline uint id() const { return _id; }
-   
+
    inline QGLImageViewer *parent() const { return _parent; }
-   
+
    /**
    * Whether the image is shown
    *
    */
    inline bool isShown() const { return _isShown; }
 //    int positioni(Axis a);
-   
+
    /**
    * Set the image to be shown
    *
@@ -538,14 +538,14 @@ public:
    * @endcode
    */
    void show(bool update = true);
-   
+
    /**
    * Set the image to be hidden
    *
    * @param update Whether the View should be updated right after hiding the image, set to false in case you want to perform many operations on the image and present the user only the final state
    */
    void hide(bool update = true);
-   
+
    /**
    * Rotate the image by some degrees(accumulating) \n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped \n
@@ -556,7 +556,7 @@ public:
    * @param msecs How long the rotation shall last, the default is 0 - thus the new rotation is reached immediately. NOTICE: that rotation() will allways respond the current value, not the final value, while the rotation is active
    */
    void rotate(Axis a, float degrees, int msecs = 0);
-   
+
    /**
    * Rotate the image around all three axes(accumulating) \n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped \n
@@ -568,7 +568,7 @@ public:
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void rotate(float xDegrees, float yDegrees, float zDegrees, bool update = true);
-   
+
    /**
    * Rotate the image to demanded degrees(NOT accumulative) \n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped \n
@@ -579,7 +579,7 @@ public:
    * @param msecs How long the rotation shall last, the default is 0 - thus the new rotation is reached immediately. NOTICE: that rotation() will allways respond the current value, not the final value, while the rotation is active
    */
    void rotateTo(Axis a, float degrees, int msecs = 0);
-   
+
    /**
    * Rotate the image around all three axes(NOT accumulative) \n
    * Keep in mind that this is a 3D environment. If you rotate around the X xor the Y axis by 180�, the rotation direction(CW/CCW) around the Z axis is swapped \n
@@ -591,7 +591,7 @@ public:
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void rotateTo(float xDegrees, float yDegrees, float zDegrees, bool update = true);
-   
+
    /**
    * Scale the image by some percent(accumulating) \n
    * NOTICE: the scaling happens in ADDITION to the VIEW scale
@@ -601,17 +601,17 @@ public:
    * @param msecs How long the scaling shall last, the default is 0 - thus the new scale is reached immediately. NOTICE: that scacleFactor() will allways respond the current value, not the final value, while scaling is active
    */
    float scale(Axis a, float percent, int msecs = 0);
-   
+
    /**
    * Scale the image along the X and Y axis by some percent(accumulating) \n
    * NOTICE: the scaling happens in ADDITION to the VIEW scale
    *
-   * @param yPercent 
+   * @param yPercent
    * @param xPercent How much. Values should be positive. Scales accumulative, i.e. if your view was previously scaled to 80% scale(X, 50%); will end up with a 40% scaled view
    * @param update Whether the screen should be updated after this action(set false in case you want to perform several translations to the view and this is not the last)
    */
    void scale(float xPercent, float yPercent, bool update = true);
-   
+
    /**
    * Scale the image along given axis to some percent(NOT accumulating) \n
    * NOTICE: the scaling happens in ADDITION to the VIEW scale
@@ -620,8 +620,8 @@ public:
    * @param percent The final scale factor.
    * @param msecs How long the scaling shall last, the default is 0 - thus the new scalefactor is reached immediately.\n
    * NOTICE: that scaleFactor() will allways respond the current value - not the final value - while the scaling is active
-   * @param viewRelative 
-   * @param assumedViewScale Assume you want to scale viewRelative and at the same time scale the view. 
+   * @param viewRelative
+   * @param assumedViewScale Assume you want to scale viewRelative and at the same time scale the view.
    */
    float scaleTo(Axis a, float percent, int msecs = 0, bool viewRelative = false, float assumedViewScale = -1.0);
    void scaleTo(float xPercent, float yPercent, bool update = true, bool viewRelative = false, float assumedViewScaleX = -1.0, float assumedViewScaleY = -1.0);
@@ -629,11 +629,11 @@ public:
    void move(float xPercent, float yPercent, float zPercent, bool update = true);
    void moveTo(Axis a, float percent, int msecs = 0);
    void moveTo(float xPercent, float yPercent, float zPercent, bool update = true);
-   
+
    void setAlpha(float percent, int msecs = 0);
    void tint(const QColor & color, int msecs = 0);
    void setBrightness(float percent, int msecs = 0);
-   
+
    /**
    * Blur the image
    *
@@ -661,21 +661,21 @@ public:
    */
    inline void tunnel(float factor, int msecs = 0) {blur(factor, msecs, 1);}
    void blur(float factor, int msecs = 0, int type = 0);
-   
+
    inline float blurrage(){return _blur;}
-   
+
    void setClipRect(int x, int y, int w, int h, bool update = true);
    inline void setClipRect(QRect &r, bool update = true) { setClipRect(r.x(), r.y(), r.width(), r.height(), update); }
-   
+
    inline void setClipping(bool enabled = true) { _hasClipping = enabled; }
    inline bool hasClipping() const { return _hasClipping; }
-   
+
    void invert(bool inverted = true, bool update = true);
    inline bool isInverted() { return _inverted; }
-   
-   
+
+
    void resize(int width, int height, int msecs = 0, float assumedViewScaleX = -1.0, float assumedViewScaleY = -1.0);
-   
+
    /**
    * Adds a shader to the images pipeline
    *
@@ -699,12 +699,12 @@ public:
    *@param update Whether to update the display after removing this shader(autoset to false if you're not linking, so removeShader(myFancyShader, false, true) will NOT update the display)
    */
    void removeShader(GLhandleARB shader, bool relinkProgram = true, bool update = true);
-   
+
    /**
    * The shader program(collection of shaders) for this image(may be zero if no shader was added)
    */
    inline GLhandleARB shaderProgram(){ return _shaderProgram; }
-   
+
    /**
    * Sets the images shader program to the program of another image
    * WARNING: The two images will then share the same shader program and a modification on one will affect the other as well
@@ -712,12 +712,12 @@ public:
    *@param img The QGLImage to share the shader program with
    */
    inline void setShaderProgram(QGLImage &img){ _shaderProgram = img._shaderProgram; }
-   
+
    /**
    * A QList containig all shaders that are atached to this image
    */
    inline ShaderList & shaders() {return _shaders;}
-   
+
    /**
    * Set a uniform variable you may need in your shader.\n
    * Attributes cannot be set, as it won't make any sense in this context(attributes are only necessary to set them between glBegin() and glEnd() - what you're usually not gonna do)\n
@@ -730,17 +730,17 @@ public:
    *@param val4 the 4th value to be set
    */
    void setShaderUniform(const int var, const int varSize, const float val1, const float val2 = 0.0, const float val3 = 0.0, const float val4 = 0.0);
-   
+
    /**
    * Overloaded for convenience - queries the id for the variable string and sets the variable value \n
    * Returns the variable identifier
    */
    int setShaderUniform(QString var, const int varSize, const float val1, const float val2 = 0.0, const float val3 = 0.0, const float val4 = 0.0);
-   
-   
+
+
 protected:
    void paint();
-   
+
 private:
    QGLImage(QGLImageViewer *parent, const uint id, const GLuint object, GLuint *textures, const int texAmount, int width, int height, bool hasAlpha = false);
 //    friend void QGLImageViewer::load( const QImage& img, bool show = false );
@@ -748,33 +748,33 @@ private:
    GLfloat _scale[3];
    GLfloat _desiredScale[3];
    GLfloat _scaleStep[3];
-   
+
    GLfloat _translation[3];
    GLfloat _desiredTranslation[3];
    GLfloat _translationStep[3];
-   
+
    GLfloat _rotation[3];
    GLfloat _desiredRotation[3];
    GLfloat _rotationStep[3];
-   
+
    GLfloat _color[3];
    GLfloat _colorI[4];
    GLfloat _desiredColor[4];
    GLfloat _colorStep[4];
-   
+
    GLfloat _brightness;
    GLfloat _desiredBrightness;
    GLfloat _brightnessStep;
-   
+
    GLfloat _blur;
    GLfloat _desiredBlur;
    GLfloat _blurStep;
    int _blurType;
-   
+
    GLdouble _clip[4][4];
-   
+
    GLint _combineRGB;
-   
+
    uint _id;
    GLuint _object;
    GLuint _blurObj;
@@ -789,7 +789,7 @@ private:
    QGLImageViewer *_parent;
    float _ratio;
    bool _inverted;
-   
+
    ShaderList _shaders;
    GLhandleARB _shaderProgram;
    GLint _sColor, _sAlpha, _sBrightness, _sInverted, _sTime;

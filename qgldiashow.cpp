@@ -1,21 +1,21 @@
-/* This file is NOT part of KDE ;)
-   Copyright (C) 2006 Thomas L�bking <thomas.luebking@web.de>
-
-   This application is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-*/
+/*  This file is NOT part of KDE ;)
+ *  Copyright (C) 2006-2014 Thomas Lübking <thomas.luebking@gmail.com>
+ *
+ *  This application is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Library General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or ( at your option ) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Library General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Library General Public License
+ *  along with this library; see the file COPYING.LIB.  If not, write to
+ *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA 02110-1301, USA.
+ */
 
 // #include <QtGui>
 // #include <QtOpenGL>
@@ -58,12 +58,12 @@ extern "C"
    const char *kss_applicationName = "kgldiashow.kss";
    const char *kss_description = "KGLDiashow";
    const char *kss_version = "0.9.8";
-   
+
    KGLDiaShow *kss_create( WId id )
    {
       return new KGLDiaShow( "test", id );
    }
-   
+
    QDialog *kss_setup()
    {
       return new QDialog();
@@ -77,7 +77,7 @@ KGLDiaShow::KGLDiaShow( QWidget* parent, const char* name )
    setAccessibleName( name );
 // Create an OpenGL widget
    view = new QGLImageView::QGLImageViewer( this, "glbox1", 25, false);
-//    
+//
    QPalette pal = palette();
    pal.setColor(QPalette::Background, Qt::black);
    setPalette(pal);
@@ -86,7 +86,7 @@ KGLDiaShow::KGLDiaShow( QWidget* parent, const char* name )
    flayout1->setMargin(0);
    flayout1->setSpacing(0);
    flayout1->addWidget( view );
-   
+
    Type oneInt[1] = {Int};
    Type oneUInt[1] = {UInt};
    Type oneFloat[1] = {Float};
@@ -101,7 +101,7 @@ KGLDiaShow::KGLDiaShow( QWidget* parent, const char* name )
    Type uintFlInt[3] = {UInt, Float, Int};
    Type intIntInt[3] = {Int, Int, Int};
    Type uintIntIntIntInt[5] = {UInt, Int, Int, Int, Int};
-   
+
    functionList["wait"] = Function(wait, 1, oneInt);
    functionList["quit"] = Function(quit, 0);
    functionList["debug"] = Function(_debug_, 1, oneInt);
@@ -109,36 +109,36 @@ KGLDiaShow::KGLDiaShow( QWidget* parent, const char* name )
 //    functionList["assign"] = Function(assign, 2, stringUInt, 1);
    functionList["loop"] = Function(loop, 1, oneUInt, 0);
    functionList["endloop"] = Function(endloop, 0);
-   
+
    functionList["for"] = Function(_for, 1, oneString, 1);
    functionList["endfor"] = Function(endfor, 0);
-   
+
    functionList["showImage"] = Function(showImage, 1, oneUInt);
    functionList["hideImage"] = Function(hideImage, 1, oneUInt);
    functionList["loadImage"] = Function(loadImage, 2, stringString, 1);
    functionList["copyImage"] = Function(copyImage, 2, uintString, 2);
    functionList["removeImage"] = Function(removeImage, 1, oneUInt);
-   
+
    functionList["tintImage"] = Function(tintImage, 5, uintIntIntIntInt, 4);
    functionList["setImageBrightness"] = Function(setImageBrightness, 3, uintFlInt, 2);
    functionList["clipImage"] =  Function(clipImage, 5, uintIntIntIntInt);
    functionList["blurImage"] =  Function(blurImage, 3, uintFlInt, 2);
-   
+
    functionList["rotateBy"] = Function(rotateBy, 3, axFlInt, 2);
    functionList["rotateTo"] = Function(rotateTo, 3, axFlInt, 2);
    functionList["rotateImageBy"] = Function(rotateImageBy, 4, uintAxFlInt, 3);
    functionList["rotateImageTo"] = Function(rotateImageTo, 4, uintAxFlInt, 3);
-   
+
    functionList["moveBy"] = Function(moveBy, 3, axFlInt, 2);
    functionList["moveTo"] = Function(moveTo, 3, axFlInt, 2);
    functionList["moveImageBy"] = Function(moveImageBy, 4, uintAxFlInt, 3);
    functionList["moveImageTo"] = Function(moveImageTo, 4, uintAxFlInt, 3);
-   
+
    functionList["scaleBy"] = Function(scaleBy, 3, flFlInt, 1);
    functionList["scaleTo"] = Function(scaleTo, 3, flFlInt, 1);
    functionList["scaleImageBy"] = Function(scaleImageBy, 4, uintFlFlInt, 2);
    functionList["scaleImageTo"] = Function(scaleImageTo, 4, uintFlFlInt, 2);
-   
+
    functionList["setImageAlpha"] = Function(setImageAlpha, 3, uintFlInt, 2);
    functionList["setCanvasColor"] = Function(setCanvasColor, 3, intIntInt);
    currentLine = 0;
@@ -177,24 +177,24 @@ void KGLDiaShow::run(QString file)
 Command KGLDiaShow::command(QString & string)
 {
    QString function = string.section('(',0,0);
-   
+
    FunctionList::const_iterator funcIt = functionList.find(function);
    if (funcIt == functionList.end())
    {
       qWarning("ERROR #%d: Unknown function \"%s\"", currentLine, ASCII(function));
       return Command(currentLine, INVALID);
    }
-   
+
    Function func = funcIt.value();
-   
+
    QStringList parameter; bool noParameters = false;
    parameter = string.section('(',1).remove(')').remove(';').split(',');
    if (parameter.count() == 1 && parameter[0] == "") noParameters = true;
-   
+
    if ((noParameters && func.min > 0) || (parameter.count() < func.min))
    {
       QString parameters;
-      
+
       qWarning("ERROR #%d: You need to pass at least the first %d parameter(s) to function\n%s ( %s )", currentLine, func.min, ASCII(function), "parameters?!");
       return Command(currentLine, INVALID);
    }
@@ -205,21 +205,21 @@ Command KGLDiaShow::command(QString & string)
             func.max, parameter.count(),
             ASCII(function), ASCII(parameter.join(", ")));
    }
-   
+
    if (noParameters)
       return Command(currentLine, func.id);
-   
+
    int numP = QMIN(parameter.count(), func.max);
    void *pList[numP];
-   
+
 #define VALUEERROR(_tp_) if (!ok)\
    {\
       qWarning("ERROR #%d: Parameter %d of \"%s\" must be of type \"%s\"", currentLine, i+1, functionString(func.id), typeString(func.type[i]));\
       return Command(currentLine, INVALID);\
    }
-   
+
    bool *vars = 0L;
-   
+
    for (int i = 0; i < numP; ++i)
    {
       bool ok = false;
@@ -269,7 +269,7 @@ Command KGLDiaShow::command(QString & string)
          pList[i] = new QString(parameter[i]);
       }
    }
-   
+
    return Command(currentLine, func.id, pList, numP, vars);
 }
 

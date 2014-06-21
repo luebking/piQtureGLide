@@ -1,21 +1,21 @@
-/* This file is NOT part of KDE ; )
-    Copyright ( C ) 2009 Thomas Lübking <thomas.luebking@web.de>
-
-    This application is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or ( at your option ) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-   
-    You should have received a copy of the GNU Library General Public License
-    along with this library; see the file COPYING.LIB.  If not, write to
-    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301, USA.
-*/
+/*  This file is NOT part of KDE ;)
+ *  Copyright (C) 2006-2014 Thomas Lübking <thomas.luebking@gmail.com>
+ *
+ *  This application is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Library General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or ( at your option ) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Library General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Library General Public License
+ *  along with this library; see the file COPYING.LIB.  If not, write to
+ *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA 02110-1301, USA.
+ */
 
 #include <QAction>
 #include <QDial>
@@ -100,26 +100,26 @@ static QString tooltip( const QString &function, const QStringList &shortcuts )
 void QGLIV::setupUI( const QString &startDir )
 {
     QAction *action; QToolButton *btn;
-    
+
     ui.toolbar = new QToolBar( this );
 
     ui.toolbar->addWidget( new QLabel("Folder:", ui.toolbar) );
-    
+
     ui.dirCombo = new DirFileCombo( ui.toolbar, QDir::Dirs, startDir );
     ui.toolbar->addWidget( ui.dirCombo );
 
     ui.toolbar->addWidget( spacerWidget( Qt::Horizontal, ui.toolbar ) );
-    
+
     ui.toolbar->addWidget( new QLabel("Filter:", ui.toolbar) );
-    
+
     ui.fileCombo = new DirFileCombo( ui.toolbar, QDir::Files, "none" );
     ui.fileCombo->setEntries( files );
     ui.fileCombo->setEditText( QString() );
     ui.toolbar->addWidget( ui.fileCombo );
-    
+
     connect ( ui.dirCombo, SIGNAL( currentIndexChanged(const QString&) ), ui.fileCombo, SLOT( setDirectory(const QString&) ) );
     connect ( ui.dirCombo, SIGNAL( currentIndexChanged(const QString&) ), this, SLOT( setDirectory(const QString&) ) );
-    
+
     connect ( ui.fileCombo, SIGNAL( currentIndexChanged(const QString&) ), this, SLOT( jumpTo(const QString&) ) );
     connect ( ui.fileCombo, SIGNAL( textEntered(const QString&) ), this, SLOT( setFilter(const QString&) ) );
 
@@ -127,7 +127,7 @@ void QGLIV::setupUI( const QString &startDir )
     ui.tools = new QToolBox( this );
 
     QHBoxLayout *btnBox;
-    
+
     QWidget *widget = ui.tools->widget( ui.tools->addItem( new QWidget, "Navigation" ) );
     widget->setLayout( new QVBoxLayout( widget ) );
 
@@ -148,7 +148,7 @@ void QGLIV::setupUI( const QString &startDir )
                                                 "Slide horizontally" << "Slide vertically" <<
                                                 "Slide through screen" );
     connect ( ui.transitions, SIGNAL( currentIndexChanged(int) ), this, SLOT( setTransitionEffect(int) ) );
-    
+
     widget->layout()->addWidget( ui.transitions );
 
     btnBox = new QHBoxLayout;
@@ -175,9 +175,9 @@ void QGLIV::setupUI( const QString &startDir )
     btnBox->addStretch();
     widget->layout()->addItem( btnBox );
 
-    
+
     static_cast<QVBoxLayout*>(widget->layout())->addStretch();
-    
+
     widget = ui.tools->widget( ui.tools->addItem( new QWidget, "Rotation" ) );
     widget->setToolTip( tooltip( "Rotation", QStringList() << "Ctrl + Shift + LMB Drag" << "Ctrl + Shift + Arrow keys" ) );
     widget->setLayout( new QVBoxLayout( widget ) );
@@ -198,7 +198,7 @@ void QGLIV::setupUI( const QString &startDir )
     ADD_BUTTON( btnBox, "v", Down + Qt::CTRL + Qt::SHIFT, flipDown(), tooltip ("Flip vertical", QStringList( "[Ctrl + Shift + Down]" ) ) );
     btnBox->addStretch();
     widget->layout()->addItem( btnBox );
-    
+
     ui.rotateZ = new QDial( widget ); ui.rotateZ->setWrapping( true ); ui.rotateZ->setRange( 0, 360 );
     connect ( ui.rotateZ, SIGNAL( valueChanged(int) ), this, SLOT( ZRotate(int) ) );
 
@@ -211,7 +211,7 @@ void QGLIV::setupUI( const QString &startDir )
     sliderBox->addWidget( ui.rotateZ );
     sliderBox->addWidget( ui.rotateX );
     widget->layout()->addItem( sliderBox );
-    
+
     ui.rotateY = new QSlider( Qt::Horizontal, widget ); ui.rotateY->setRange( -360, 360 );
     connect ( ui.rotateY, SIGNAL( valueChanged(int) ), this, SLOT( YRotate(int) ) );
     widget->layout()->addWidget( ui.rotateY );
@@ -222,7 +222,7 @@ void QGLIV::setupUI( const QString &startDir )
     ADD_BUTTON( widget->layout(), "Reset", R + Qt::CTRL, resetRotation(), tooltip( "Reset rotation", QStringList( "[Ctrl + R]" ) ) );
 
     static_cast<QVBoxLayout*>(widget->layout())->addStretch();
-    
+
     widget = ui.tools->widget( ui.tools->addItem( new QWidget, "Color" ) );
     widget->setLayout( new QVBoxLayout( widget ) );
 
@@ -232,7 +232,7 @@ void QGLIV::setupUI( const QString &startDir )
     connect ( slider, SIGNAL( valueChanged(int) ), this, SLOT( setCanvasValue(int) ) );
     btnBox->addWidget( slider );
     widget->layout()->addItem( btnBox );
-    
+
     btnBox = new QHBoxLayout;
     ADD_BUTTON( btnBox, "Reset", C + Qt::SHIFT, resetColors(), "[Shift + C]" );
     btnBox->addStretch();
@@ -241,7 +241,7 @@ void QGLIV::setupUI( const QString &startDir )
 
 
     QLabel *label;
-    
+
     ADD_COLOR_SLIDER( R, Red, red, 255 );
     ADD_COLOR_SLIDER( G, Green, green, 255 );
     ADD_COLOR_SLIDER( B, Blue, blue, 255 );
@@ -249,7 +249,7 @@ void QGLIV::setupUI( const QString &startDir )
     ADD_COLOR_SLIDER( L, Gamma, gamma, 200 );
 
     ui.viewBar = new QToolBar( this );
-    
+
     action = ui.viewBar->addAction( "Fullscreen", this, SLOT( toggleFullscreen() ) );
     view->addAction( action );
     action->setToolTip( tooltip( "Toggle Fullscreen", QStringList("[Alt + Enter]") ) );
@@ -258,29 +258,29 @@ void QGLIV::setupUI( const QString &startDir )
     ADD_ACTION( U + Qt::CTRL, toggleUI(), tooltip( "Toggle UI",  QStringList( "[Ctrl + U]" ) ) );
     action->setText( "Toggle UI" );
     ui.viewBar->addAction( action );
-    
+
     action = ui.viewBar->addAction( "(-)", this, SLOT( setCycle(bool) ) );
     action->setCheckable( true ); action->setShortcut( Qt::CTRL + Qt::Key_C );
     action->setToolTip( "Cylcle Images" );
     view->addAction( action );
-    
+
     ui.viewBar->addWidget( spacerWidget( Qt::Horizontal, ui.viewBar ) );
     ui.viewBar->addAction( bwdAction );
-    
+
     action = ui.viewBar->addAction( " > ", this, SLOT( setDiaShow(bool) ) );
     action->setShortcut( Qt::CTRL + Qt::Key_D ); action->setCheckable( true );
     action->setToolTip( tooltip( "Diashow", QStringList( "[Ctrl + D]" ) ) );
     view->addAction( action );
-    
+
     ui.viewBar->addAction( fwdAction );
     ui.viewBar->addWidget( spacerWidget( Qt::Horizontal, ui.viewBar ) );
-    
+
     ui.autoSize = action = ui.viewBar->addAction( "Fit", this, SLOT(setAutosize(bool)) );
     action->setCheckable( true );
     action->setToolTip( tooltip( "Maximize", QStringList() << "[*]"  << "Doubleclick" ) );
-    
+
     ADD_ACTION( Asterisk, maxW(), tooltip( "Maximize", QStringList() << "[*]"  << "Doubleclick" ) );
-    
+
     ui.zoomTimer = new QTimer( this );
     ui.zoomSlider = new QSlider( Qt::Horizontal, ui.viewBar );
     ui.zoomSlider->setFixedWidth(80);
@@ -289,10 +289,10 @@ void QGLIV::setupUI( const QString &startDir )
     ui.zoomSlider->setToolTip( tooltip( "Zoom", QStringList() << "[+]/[-]"  << "[Shift] + LMB Drag" ) );
     connect ( ui.zoomSlider, SIGNAL( sliderReleased() ), this, SLOT( resetZoomSlider() ) );
     connect ( ui.zoomSlider, SIGNAL( sliderMoved(int) ), this, SLOT( zoom(int) ) );
-    
+
     ADD_ACTION( Plus, zoomIn(), tooltip( "Zoom in", QStringList( "[+]" ) ) );
     ADD_ACTION( Minus, zoomOut(), tooltip( "Zoom in", QStringList( "[-]" ) ) );
-    
+
     action = ui.viewBar->addAction( "100%", this, SLOT( resetView() ) );
     action->setShortcut( Qt::Key_Slash );
     action->setToolTip( tooltip( "Reset view", QStringList() << "[/]"  << "[Ctrl] + Doubleclick" ) );
@@ -455,7 +455,7 @@ void QGLIV::resetView( int ms )
     view->rotateTo( QGLImageView::X, 0.0, ms );
     view->rotateTo( QGLImageView::Y, 0.0, ms );
     view->rotateTo( QGLImageView::Z, 0.0, ms );
-    
+
     view->scaleTo( QGLImageView::X, 100.0, ms );
     view->scaleTo( QGLImageView::Y, 100.0, ms );
 
@@ -490,7 +490,7 @@ void QGLIV::maxW( int ms )
     dont_dragswitch = false;
     current->image->moveTo( QGLImageView::X, 50.0, ms );
     current->image->moveTo( QGLImageView::Y, 50.0, ms );
-    
+
     view->scaleTo( QGLImageView::X, 100.0, ms );
     view->scaleTo( QGLImageView::Y, 100.0, ms );
     view->rotateTo( QGLImageView::X, 0.0, ms );
@@ -513,7 +513,7 @@ void QGLIV::maxW( int ms )
         current->image->scaleTo( QGLImageView::X, current->image->scaleTo( QGLImageView::Y, 100.0*(1.0/a), ms, true, 100.0 ), ms );
     view->moveTo( QGLImageView::X, 50.0, ms );
     view->moveTo( QGLImageView::Y, 50.0, ms );
-    
+
     // ui
     DO_BLOCKED( ui.rotateX, setValue( 0 ) );
     DO_BLOCKED( ui.rotateY, setValue( 0 ) );
