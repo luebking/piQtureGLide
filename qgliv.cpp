@@ -499,33 +499,33 @@ QGLIV::cacheIsReady()
 
 
 void
-QGLIV::unload(Image *client)
+QGLIV::unload(Image *image)
 {
-    if (!client)
+    if (!image)
         return;
-    if (client->image) {
-        view->remove(client->image->id());
-        client->image = 0;
+    if (image->image) {
+        view->remove(image->image->id());
+        image->image = 0;
     }
-    delete client;
+    delete image;
 }
 
 void
-loadImage(void *ptr, Image *client)
+loadImage(void *ptr, Image *image)
 {
     QGLIV *qgliv = static_cast<QGLIV*>(ptr);
-    const bool bwd = (client == qgliv->prev);
+    const bool bwd = (image == qgliv->prev);
     bool wantCycle = qgliv->cycle();
 
-    if (client->index < 0 || client->index > qgliv->files.count() - 1) {
+    if (image->index < 0 || image->index > qgliv->files.count() - 1) {
         if (wantCycle) {
             wantCycle = false;
             if (bwd)
-                client->index = qgliv->files.count() - 1;
+                image->index = qgliv->files.count() - 1;
             else
-                client->index = 0;
+                image->index = 0;
         } else {
-            client->index = -1; // invalidate
+            image->index = -1; // invalidate
             return;
         }
     }
@@ -534,18 +534,18 @@ loadImage(void *ptr, Image *client)
     const int inc = bwd ? -1 : 1;
 //     int safer = 0;
     while (!qgliv->files.isEmpty()) {
-        while (!qgliv->filterMatches(client->index)) {
+        while (!qgliv->filterMatches(image->index)) {
             // search next valid entry
-            client->index += inc;
-            if (client->index < 0 || client->index > qgliv->files.count() - 1) {
+            image->index += inc;
+            if (image->index < 0 || image->index > qgliv->files.count() - 1) {
                 if (wantCycle) {
                     wantCycle = false;
                     if (bwd)
-                        client->index = qgliv->files.count() - 1;
+                        image->index = qgliv->files.count() - 1;
                     else
-                        client->index = 0;
+                        image->index = 0;
                 } else {
-                    client->index = -1;
+                    image->index = -1;
                     delete buffer;
                     return;
                 }
@@ -553,24 +553,24 @@ loadImage(void *ptr, Image *client)
         }
 
         // try to load
-        if (buffer->load(qgliv->files.at(client->index)))
+        if (buffer->load(qgliv->files.at(image->index)))
             break;
         else {
             // this entry is not a supported Image
-            qgliv->files.removeAt(client->index);
+            qgliv->files.removeAt(image->index);
             qgliv->filterIsDirty = true;
 
             // TODO this code is the same as above ==================
-            client->index += inc;
-            if (client->index < 0 || client->index > qgliv->files.count() - 1) {
+            image->index += inc;
+            if (image->index < 0 || image->index > qgliv->files.count() - 1) {
                 if (wantCycle) {
                     wantCycle = false;
                     if (bwd)
-                        client->index = qgliv->files.count() - 1;
+                        image->index = qgliv->files.count() - 1;
                     else
-                        client->index = 0;
+                        image->index = 0;
                 } else {
-                    client->index = -1;
+                    image->index = -1;
                     delete buffer;
                     return;
                 }
@@ -624,33 +624,33 @@ loadImage(void *ptr, Image *client)
         }
     }
 
-    client->qGlImage = buffer;
+    image->qGlImage = buffer;
 }
 
 void
-QGLIV::load(Image *New, bool block)
+QGLIV::load(Image *image, bool block)
 {
     if (block) {
-        loadImage(this, New);
+        loadImage(this, image);
         imageLoaded();
     } else {
         QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
         connect(watcher, SIGNAL(finished()), this, SLOT(imageLoaded()));
-        watcher->setFuture(QtConcurrent::run(loadImage, this, New));
+        watcher->setFuture(QtConcurrent::run(loadImage, this, image));
     }
 }
 
 
 void
-QGLIV::addToView(Image *client)
+QGLIV::addToView(Image *image)
 {
-    if (!client->qGlImage || client->image || client->index < 0)
+    if (!image->qGlImage || image->image || image->index < 0)
         return;
-    view->load(*client->qGlImage, client == current, numPoly, true);
-    client->image = &view->images().last();
-    client->image->addShader(shader_vert, false);
-    client->image->addShader(shader_frag);
-    delete client->qGlImage; client->qGlImage = 0;
+    view->load(*image->qGlImage, image == current, numPoly, true);
+    image->image = &view->images().last();
+    image->image->addShader(shader_vert, false);
+    image->image->addShader(shader_frag);
+    delete image->qGlImage; image->qGlImage = 0;
 }
 
 void

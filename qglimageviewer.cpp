@@ -78,10 +78,6 @@ QGLImage::QGLImage(QGLImageViewer *parent, const uint id, const GLuint object,
                    GLuint *textures, const int texAmount, int width, int height, bool hasAlpha)
     : _id(id),
       _object(object),
-      _blurObj(0),
-      _blurTex(0),
-      _blurW(0),
-      _blurH(0),
       _textures(textures),
       _texAmount(texAmount),
       _basicWidth(width),
@@ -98,35 +94,39 @@ QGLImage::QGLImage(QGLImageViewer *parent, const uint id, const GLuint object,
         return;
     }
 
+    m_blur.value = m_blur.target = m_blur.step = 0.0;
+    m_blur.type = m_blur.width = m_blur.height = 0;
+    m_blur.object = m_blur.texture = 0;
+
     _parent = parent;
     for (int i = 0; i < 3; ++i) {
-        _scale[i] = 1.0;
-        _rotation[i] = 0.0;
-        _translation[i] = 0.0;
+        m_scale.value[i] = 1.0;
+        m_rotation.value[i] = 0.0;
+        m_translation.value[i] = 0.0;
         _color[i] = 1.0;
         _colorI[i] = 0;
 
-        _scaleStep[i] = 0.0;
-        _rotationStep[i] = 0.0;
-        _translationStep[i] = 0.0;
+        m_scale.step[i] = 0.0;
+        m_rotation.step[i] = 0.0;
+        m_translation.step[i] = 0.0;
         _colorStep[i] = 0.0;
 
-        _desiredScale[i] = 0.0;
-        _desiredRotation[i] = 0.0;
-        _desiredTranslation[i] = 0.0;
+        m_scale.target[i] = 0.0;
+        m_rotation.target[i] = 0.0;
+        m_translation.target[i] = 0.0;
         _desiredColor[i] = 0.0;
 
     }
     _colorI[3] = 1.0;
     _colorStep[3] = 0.0;
     _desiredColor[3] = 0.0;
-    _brightness = 1.0;
-    _brightnessStep = 0.0;
-    _desiredBrightness = 0.0;
-    _blur = 0.0;
-    _blurStep = 0.0;
-    _blurType = 0;
-    _desiredBlur = 0.0;
+    m_brightness.value = 1.0;
+    m_brightness.step = 0.0;
+    m_brightness.target = 0.0;
+    m_blur.value = 0.0;
+    m_blur.step = 0.0;
+    m_blur.type = 0;
+    m_blur.target = 0.0;
     _combineRGB = GL_ADD;
     _ratio = (float)height / width;
 
@@ -143,11 +143,11 @@ QGLImage::~QGLImage()
 */
 int QGLImage::width() const
 {
-    return (int)(3.0 * _scale[X] * _parent->scaleFactor(X) * _parent->width() / -(_translation[Z] + _parent->position(Z)));
+    return (int)(3.0 * m_scale.value[X] * _parent->scaleFactor(X) * _parent->width() / -(m_translation.value[Z] + _parent->position(Z)));
 }
 int QGLImage::height() const
 {
-    return (int)(3.0 * _scale[Y] * _parent->scaleFactor(Y) * _parent->width() * _basicHeight / (-(_translation[Z] + _parent->position(Z)) * _basicWidth));
+    return (int)(3.0 * m_scale.value[Y] * _parent->scaleFactor(Y) * _parent->width() * _basicHeight / (-(m_translation.value[Z] + _parent->position(Z)) * _basicWidth));
 }
 
 
@@ -215,34 +215,34 @@ void QGLImageViewer::mergeCnB(QGLImage & img)
     float min = QMIN(QMIN(img._colorI[0], img._colorI[1]), img._colorI[2]);
 
     /** next figure out whether subtract, add or where between */
-    if (min + img._brightness < 5.0 / 6.0)
-//    == (min - 1.0/3.0 + _brightness - 1.0 < -0.5)
-//    == (_brightness < 0.5 - min + 1/3)
+    if (min + img.m_brightness.value < 5.0 / 6.0)
+//    == (min - 1.0/3.0 + m_brightness.value - 1.0 < -0.5)
+//    == (m_brightness.value < 0.5 - min + 1/3)
     {
         /** This means we want to subtract more than 0.5, what add_signed cannot handle */
         img._combineRGB = GL_SUBTRACT; // qWarning("subtract");
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = 1.0 / 4.5 - img._colorI[i] + (1.0 - img._brightness);
-//          == _colorI[i] = 1.0/3.0 - _colorI[i]*sum/_color[i] + (1.0 - _brightness);
-    } else if (max + img._brightness > 1.5)
-//    == (max + _brightness - 1.0 > 0.5)
-//    == (_brightness > 1.5 - max)
+            img._colorI[i] = 1.0 / 4.5 - img._colorI[i] + (1.0 - img.m_brightness.value);
+//          == _colorI[i] = 1.0/3.0 - _colorI[i]*sum/_color[i] + (1.0 - m_brightness.value);
+    } else if (max + img.m_brightness.value > 1.5)
+//    == (max + m_brightness.value - 1.0 > 0.5)
+//    == (m_brightness.value > 1.5 - max)
     {
         /** This means we want to add more than 0.5, what add_signed cannot handle */
         img._combineRGB = GL_ADD; // qWarning("add");
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = img._colorI[i] + img._brightness - 1.0;
+            img._colorI[i] = img._colorI[i] + img.m_brightness.value - 1.0;
     } else {
         /** glueing ;) - NOTICE that we 'should' include the +1/12 shift
         (which is necessary to end up with no change for color == white / brightnes == 1)
-        into the shift function "(1.0/mi * _brightness - (1.5-max)/mi) * 1.0/3.0"
+        into the shift function "(1.0/mi * m_brightness.value - (1.5-max)/mi) * 1.0/3.0"
         but i decided this is useless (coloring isn't a precise function at all anyway)
         and would only add complexity */
         img._combineRGB = GL_ADD_SIGNED; // qWarning("add_signed");
         float mi = (max - 2.0 / 3.0 - min);
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = img._colorI[i] - (1.0 / mi * img._brightness - (1.5 - max) / mi) * 1.0 / 3.0 + img._brightness - 5.0 / 12.0;
-//          == _colorI[i] = _colorI[i] - (1.0/mi * _brightness - (1.5-max)/mi) * 1.0/3.0 + _brightness - 1.0 + 0.5 + 1.0/12.0;
+            img._colorI[i] = img._colorI[i] - (1.0 / mi * img.m_brightness.value - (1.5 - max) / mi) * 1.0 / 3.0 + img.m_brightness.value - 5.0 / 12.0;
+//          == _colorI[i] = _colorI[i] - (1.0/mi * m_brightness.value - (1.5-max)/mi) * 1.0/3.0 + m_brightness.value - 1.0 + 0.5 + 1.0/12.0;
     }
 }
 
@@ -266,7 +266,7 @@ void QGLImage::paint()
     glRotatef(rotation(X), 1.0, 0.0, 0.0);
     glRotatef(rotation(Y), 0.0, 1.0, 0.0);
     glRotatef(rotation(Z), 0.0, 0.0, 1.0);
-    glScalef(_scale[X], _scale[Y], _scale[Z]);
+    glScalef(m_scale.value[X], m_scale.value[Y], m_scale.value[Z]);
     glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, _combineRGB);
 
     if (hasClipping()) {
@@ -286,7 +286,7 @@ void QGLImage::paint()
     glUseProgramObjectARB(_shaderProgram);
     glColor4fv(_colorI);
 
-    glCallList(_blur > 0.0 ? _blurObj : glObject());
+    glCallList(m_blur.value > 0.0 ? m_blur.object : glObject());
 
 //    if (isInverted())
 //       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -320,19 +320,19 @@ void QGLImage::paint()
 void QGLImage::setBrightness(float percent, int msecs)
 {
     // stop running color animagtions (iff)
-    if (_brightnessStep != 0.0) {
-        _brightnessStep = 0.0;
+    if (m_brightness.step != 0.0) {
+        m_brightness.step = 0.0;
         --_activeAnimations;
     }
-    float oldBrightness = _brightness;
-    _brightness = CLAMP(percent / 100.0, 0.0, 2.0);
-    if (oldBrightness == _brightness)
+    float oldBrightness = m_brightness.value;
+    m_brightness.value = CLAMP(percent / 100.0, 0.0, 2.0);
+    if (oldBrightness == m_brightness.value)
         return;
     if (!msecs) {
         if (_shaderProgram) {
             _parent->makeCurrent();
             glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-            glUniform1fARB(_sBrightness, _brightness - 1.0);
+            glUniform1fARB(_sBrightness, m_brightness.value - 1.0);
         }
         _parent->mergeCnB(*this);
         if (_isShown)
@@ -340,11 +340,11 @@ void QGLImage::setBrightness(float percent, int msecs)
         return;
     }
 
-    _desiredBrightness = _brightness;
-    _brightness = oldBrightness;
-    _brightnessStep = (_desiredBrightness - _brightness) * _parent->fpsDelay() / msecs;
+    m_brightness.target = m_brightness.value;
+    m_brightness.value = oldBrightness;
+    m_brightness.step = (m_brightness.target - m_brightness.value) * _parent->fpsDelay() / msecs;
 
-    if (_brightnessStep != 0.0) { // need to animate
+    if (m_brightness.step != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -405,26 +405,26 @@ void QGLImage::invert(bool inverted, bool update)
 void QGLImage::blur(float factor, int msecs, int type)
 {
     // stop running color animagtions (iff)
-    if (_blurStep != 0.0) {
-        _blurStep = 0;
+    if (m_blur.step != 0.0) {
+        m_blur.step = 0;
         --_activeAnimations;
     }
-    GLfloat oldBlur = _blur;
-    _blur = QMAX(0.0, factor);
-    if ((oldBlur == _blur) && (_blurType == type))
+    GLfloat oldBlur = m_blur.value;
+    m_blur.value = QMAX(0.0, factor);
+    if ((oldBlur == m_blur.value) && (m_blur.type == type))
         return;
-    _blurType = type;
+    m_blur.type = type;
     if (!msecs && _isShown) {
         _parent->blur(*this);
         _parent->updateGL();
         return;
     }
 
-    _desiredBlur = _blur;
-    _blur = oldBlur;
-    _blurStep = (_desiredBlur - _blur) * _parent->fpsDelay() / msecs;
+    m_blur.target = m_blur.value;
+    m_blur.value = oldBlur;
+    m_blur.step = (m_blur.target - m_blur.value) * _parent->fpsDelay() / msecs;
 
-    if (_blurStep != 0.0) { // need to animate
+    if (m_blur.step != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -446,20 +446,20 @@ void QGLImage::hide(bool update)
 void QGLImage::rotate(Axis a, float degrees, int msecs)
 {
     // stop running animations
-    if (_rotationStep[a] != 0.0) {
+    if (m_rotation.step[a] != 0.0) {
         --_activeAnimations;
-        _rotationStep[a] = 0.0;
+        m_rotation.step[a] = 0.0;
     }
     float deg = a == Z ? -degrees : degrees;
     // TODO: clamp rotation to [0,360] when done
     if (msecs == 0) {
-        _rotation[a] = deg;
+        m_rotation.value[a] = deg;
         _parent->updateGL();
         return;
     }
-    _desiredRotation[a] = _rotation[a] + deg;
-    _rotationStep[a] = deg * _parent->fpsDelay() / msecs;
-    if (_rotationStep[a] != 0.0) { // need to animate
+    m_rotation.target[a] = m_rotation.value[a] + deg;
+    m_rotation.step[a] = deg * _parent->fpsDelay() / msecs;
+    if (m_rotation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -467,26 +467,26 @@ void QGLImage::rotate(Axis a, float degrees, int msecs)
 void QGLImage::rotate(float xDegrees, float yDegrees, float zDegrees, bool update)
 {
     // stop running animations
-    if (_rotationStep[X] != 0.0) {
+    if (m_rotation.step[X] != 0.0) {
         --_activeAnimations;
-        _rotationStep[X] = 0.0;
+        m_rotation.step[X] = 0.0;
     }
-    if (_rotationStep[Y] != 0.0) {
+    if (m_rotation.step[Y] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Y] = 0.0;
+        m_rotation.step[Y] = 0.0;
     }
-    if (_rotationStep[Z] != 0.0) {
+    if (m_rotation.step[Z] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Z] = 0.0;
+        m_rotation.step[Z] = 0.0;
     }
-    _rotation[X] += xDegrees;
-    _rotation[Y] += yDegrees;
-    _rotation[Z] -= zDegrees;
+    m_rotation.value[X] += xDegrees;
+    m_rotation.value[Y] += yDegrees;
+    m_rotation.value[Z] -= zDegrees;
     for (int a = 0; a < 3; ++a) {
-        while (_rotation[a] > 360.0)
-            _rotation[a] -= 360.0;
-        while (_rotation[a] < 0.0)
-            _rotation[a] += 360.0;
+        while (m_rotation.value[a] > 360.0)
+            m_rotation.value[a] -= 360.0;
+        while (m_rotation.value[a] < 0.0)
+            m_rotation.value[a] += 360.0;
     }
     if (update)
         _parent->updateGL();
@@ -494,27 +494,27 @@ void QGLImage::rotate(float xDegrees, float yDegrees, float zDegrees, bool updat
 void QGLImage::rotateTo(Axis a, float degrees, int msecs)
 {
     // stop running animations
-    if (_rotationStep[a] != 0.0) {
+    if (m_rotation.step[a] != 0.0) {
         --_activeAnimations;
-        _rotationStep[a] = 0.0;
+        m_rotation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _rotation[a] = degrees;
+        m_rotation.value[a] = degrees;
         _parent->updateGL();
         return;
     }
     // clamp current rotation
-    while (_rotation[a] > 180.0)
-        _rotation[a] -= 360.0;
-    while (_rotation[a] < -180.0)
-        _rotation[a] += 360.0;
+    while (m_rotation.value[a] > 180.0)
+        m_rotation.value[a] -= 360.0;
+    while (m_rotation.value[a] < -180.0)
+        m_rotation.value[a] += 360.0;
     //======
-    _desiredRotation[a] = degrees;
-    float diff = _desiredRotation[a] - _rotation[a];
+    m_rotation.target[a] = degrees;
+    float diff = m_rotation.target[a] - m_rotation.value[a];
     if (QABS(diff) > 180.0)
         diff = 360.0 - QABS(diff);
-    _rotationStep[a] = diff * _parent->fpsDelay() / msecs;
-    if (_rotationStep[a] != 0.0) { // need to animate
+    m_rotation.step[a] = diff * _parent->fpsDelay() / msecs;
+    if (m_rotation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -522,26 +522,26 @@ void QGLImage::rotateTo(Axis a, float degrees, int msecs)
 void QGLImage::rotateTo(float xDegrees, float yDegrees, float zDegrees, bool update)
 {
     // stop running animations
-    if (_rotationStep[X] != 0.0) {
+    if (m_rotation.step[X] != 0.0) {
         --_activeAnimations;
-        _rotationStep[X] = 0.0;
+        m_rotation.step[X] = 0.0;
     }
-    if (_rotationStep[Y] != 0.0) {
+    if (m_rotation.step[Y] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Y] = 0.0;
+        m_rotation.step[Y] = 0.0;
     }
-    if (_rotationStep[Z] != 0.0) {
+    if (m_rotation.step[Z] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Z] = 0.0;
+        m_rotation.step[Z] = 0.0;
     }
-    _rotation[X] = xDegrees;
-    _rotation[Y] = yDegrees;
-    _rotation[Z] = zDegrees;
+    m_rotation.value[X] = xDegrees;
+    m_rotation.value[Y] = yDegrees;
+    m_rotation.value[Z] = zDegrees;
     for (int a = 0; a < 3; ++a) {
-        while (_rotation[a] > 360.0)
-            _rotation[a] -= 360.0;
-        while (_rotation[a] < 0.0)
-            _rotation[a] += 360.0;
+        while (m_rotation.value[a] > 360.0)
+            m_rotation.value[a] -= 360.0;
+        while (m_rotation.value[a] < 0.0)
+            m_rotation.value[a] += 360.0;
     }
     if (update)
         _parent->updateGL();
@@ -552,22 +552,22 @@ float QGLImage::scale(Axis a, float percent, int msecs)
     if (percent < 0.0 || a == Z) //invalid
         return 0.0;
     // stop running animations
-    if (_scaleStep[a] != 0.0) {
+    if (m_scale.step[a] != 0.0) {
         --_activeAnimations;
-        _scaleStep[a] = 0.0;
+        m_scale.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _scale[a] *= percent / 100.0;
+        m_scale.value[a] *= percent / 100.0;
         _parent->updateGL();
-        return _scale[a] * 100.0;
+        return m_scale.value[a] * 100.0;
     }
-    _desiredScale[a] = _scale[a] * percent / 100.0;
-    _scaleStep[a] = (_desiredScale[a] - _scale[a]) * _parent->fpsDelay() / msecs;
-    if (_scaleStep[a] != 0.0) { // need to animate
+    m_scale.target[a] = m_scale.value[a] * percent / 100.0;
+    m_scale.step[a] = (m_scale.target[a] - m_scale.value[a]) * _parent->fpsDelay() / msecs;
+    if (m_scale.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
-    return _scale[a] * 100.0;
+    return m_scale.value[a] * 100.0;
 }
 
 void QGLImage::scale(float xPercent, float yPercent, bool update)
@@ -575,18 +575,18 @@ void QGLImage::scale(float xPercent, float yPercent, bool update)
     if (xPercent < 0.0 && yPercent < 0.0)  //invalid
         return;
     // stop running animations
-    if (_scaleStep[X] != 0.0) {
+    if (m_scale.step[X] != 0.0) {
         --_activeAnimations;
-        _scaleStep[X] = 0.0;
+        m_scale.step[X] = 0.0;
     }
-    if (_scaleStep[Y] != 0.0) {
+    if (m_scale.step[Y] != 0.0) {
         --_activeAnimations;
-        _scaleStep[Y] = 0.0;
+        m_scale.step[Y] = 0.0;
     }
-    _scale[X] *= xPercent / 100.0;
-    _scale[Y] *= yPercent / 100.0;
-    if (_scale[X] < 0.0) _scale[X] = _scale[Y];
-    if (_scale[Y] < 0.0) _scale[Y] = _scale[X];
+    m_scale.value[X] *= xPercent / 100.0;
+    m_scale.value[Y] *= yPercent / 100.0;
+    if (m_scale.value[X] < 0.0) m_scale.value[X] = m_scale.value[Y];
+    if (m_scale.value[Y] < 0.0) m_scale.value[Y] = m_scale.value[X];
     if (update)
         _parent->updateGL();
 }
@@ -596,25 +596,25 @@ float QGLImage::scaleTo(Axis a, float percent, int msecs, bool viewRelative, flo
     if (percent < 0.0 || a == Z) //invalid
         return 0.0;
     // stop running animations
-    if (_scaleStep[a] != 0.0) {
+    if (m_scale.step[a] != 0.0) {
         --_activeAnimations;
-        _scaleStep[a] = 0.0;
+        m_scale.step[a] = 0.0;
     }
     float iPercent = percent;
     if (viewRelative) { //this means we shall fill <percent> % of the viewport on this axis
         float aParentScale = assumedViewScale < 0.0 ? _parent->scaleFactor(a) : assumedViewScale / 100.0;
-        iPercent = -(_translation[Z] + _parent->position(Z)) / 3.0 * percent / aParentScale;
+        iPercent = -(m_translation.value[Z] + _parent->position(Z)) / 3.0 * percent / aParentScale;
         if (a == Y)
             iPercent *= ((float)(_parent->height() * _basicWidth)) / (_parent->width() * _basicHeight);
     }
     if (msecs == 0) {
-        _scale[a] = iPercent / 100.0;
+        m_scale.value[a] = iPercent / 100.0;
         _parent->updateGL();
         return iPercent;
     }
-    _desiredScale[a] = iPercent / 100.0;
-    _scaleStep[a] = (_desiredScale[a] - _scale[a]) * _parent->fpsDelay() / msecs;
-    if (_scaleStep[a] != 0.0) { // need  to animate
+    m_scale.target[a] = iPercent / 100.0;
+    m_scale.step[a] = (m_scale.target[a] - m_scale.value[a]) * _parent->fpsDelay() / msecs;
+    if (m_scale.step[a] != 0.0) { // need  to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -626,26 +626,26 @@ void QGLImage::scaleTo(float xPercent, float yPercent, bool update, bool viewRel
     if (xPercent < 0.0 && yPercent < 0.0)  //invalid
         return;
     // stop running animations
-    if (_scaleStep[X] != 0.0) {
+    if (m_scale.step[X] != 0.0) {
         --_activeAnimations;
-        _scaleStep[X] = 0.0;
+        m_scale.step[X] = 0.0;
     }
-    if (_scaleStep[Y] != 0.0) {
+    if (m_scale.step[Y] != 0.0) {
         --_activeAnimations;
-        _scaleStep[Y] = 0.0;
+        m_scale.step[Y] = 0.0;
     }
     float xScale = xPercent / 100.0;
     float yScale = yPercent / 100.0;
     if (viewRelative) {
         float xParentScale = assumedViewScaleX < 0.0 ? _parent->scaleFactor(X) : assumedViewScaleX / 100.0;
         float yParentScale = assumedViewScaleY < 0.0 ? _parent->scaleFactor(Y) : assumedViewScaleY / 100.0;
-        xScale = -(_translation[Z] + _parent->position(Z)) / 3.0 * xScale / xParentScale;
-        yScale = -(_translation[Z] + _parent->position(Z)) / 3.0 * yScale / yParentScale * (_parent->height() * _basicWidth) / (_parent->width() * _basicHeight);
+        xScale = -(m_translation.value[Z] + _parent->position(Z)) / 3.0 * xScale / xParentScale;
+        yScale = -(m_translation.value[Z] + _parent->position(Z)) / 3.0 * yScale / yParentScale * (_parent->height() * _basicWidth) / (_parent->width() * _basicHeight);
     }
-    _scale[X] = xScale;
-    _scale[Y] = yScale;
-    if (_scale[X] < 0.0) _scale[X] = _scale[Y];
-    if (_scale[Y] < 0.0) _scale[Y] = _scale[X];
+    m_scale.value[X] = xScale;
+    m_scale.value[Y] = yScale;
+    if (m_scale.value[X] < 0.0) m_scale.value[X] = m_scale.value[Y];
+    if (m_scale.value[Y] < 0.0) m_scale.value[Y] = m_scale.value[X];
     if (update)
         _parent->updateGL();
 }
@@ -659,8 +659,8 @@ void QGLImage::resize(int width, int height, int msecs, float assumedViewScaleX,
 
     float xParentScale = assumedViewScaleX < 0.0 ? _parent->scaleFactor(X) : assumedViewScaleX / 100.0;
     float yParentScale = assumedViewScaleY < 0.0 ? _parent->scaleFactor(Y) : assumedViewScaleY / 100.0;
-    float xScale = (-(_translation[Z] + _parent->position(Z)) / 3.0 * width / _parent->width()) / xParentScale;
-    float yScale = (-(_translation[Z] + _parent->position(Z)) / 3.0 * (height * _basicWidth) / (_parent->width() * _basicHeight)) / yParentScale;
+    float xScale = (-(m_translation.value[Z] + _parent->position(Z)) / 3.0 * width / _parent->width()) / xParentScale;
+    float yScale = (-(m_translation.value[Z] + _parent->position(Z)) / 3.0 * (height * _basicWidth) / (_parent->width() * _basicHeight)) / yParentScale;
 
     scaleTo(X, 100.0 * xScale, msecs);
     scaleTo(Y, 100.0 * yScale, msecs);
@@ -676,18 +676,18 @@ void QGLImage::move(Axis a, float percent, int msecs)
     case Z: v = -percent / 100.0; break;
     }
     // stop running animations
-    if (_translationStep[a] != 0.0) {
+    if (m_translation.step[a] != 0.0) {
         --_activeAnimations;
-        _translationStep[a] = 0.0;
+        m_translation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _translation[a] += v;
+        m_translation.value[a] += v;
         _parent->updateGL();
         return;
     }
-    _desiredTranslation[a] = _translation[a] + v;
-    _translationStep[a] = v * _parent->fpsDelay() / msecs;
-    if (_translationStep[a] != 0.0) { // need to animate
+    m_translation.target[a] = m_translation.value[a] + v;
+    m_translation.step[a] = v * _parent->fpsDelay() / msecs;
+    if (m_translation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -695,21 +695,21 @@ void QGLImage::move(Axis a, float percent, int msecs)
 void QGLImage::move(float xPercent, float yPercent, float zPercent, bool update)
 {
     // stop running animations
-    if (_translationStep[X] != 0.0) {
+    if (m_translation.step[X] != 0.0) {
         --_activeAnimations;
-        _translationStep[X] = 0.0;
+        m_translation.step[X] = 0.0;
     }
-    if (_translationStep[Y] != 0.0) {
+    if (m_translation.step[Y] != 0.0) {
         --_activeAnimations;
-        _translationStep[Y] = 0.0;
+        m_translation.step[Y] = 0.0;
     }
-    if (_translationStep[Z] != 0.0) {
+    if (m_translation.step[Z] != 0.0) {
         --_activeAnimations;
-        _translationStep[Z] = 0.0;
+        m_translation.step[Z] = 0.0;
     }
-    _translation[X] += -1.0 + xPercent / 50.0;
-    _translation[Y] += ((float)_parent->height()) / _parent->width() - yPercent * _parent->height() / (50.0 * _parent->width());
-    _translation[Z] -= zPercent / 100.0;
+    m_translation.value[X] += -1.0 + xPercent / 50.0;
+    m_translation.value[Y] += ((float)_parent->height()) / _parent->width() - yPercent * _parent->height() / (50.0 * _parent->width());
+    m_translation.value[Z] -= zPercent / 100.0;
     if (update)
         _parent->updateGL();
 }
@@ -722,18 +722,18 @@ void QGLImage::moveTo(Axis a, float percent, int msecs)
     case Z: v = (50.0 - percent) / 100.0; break;
     }
     // stop running animations
-    if (_translationStep[a] != 0.0) {
+    if (m_translation.step[a] != 0.0) {
         --_activeAnimations;
-        _translationStep[a] = 0.0;
+        m_translation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _translation[a] = v;
+        m_translation.value[a] = v;
         _parent->updateGL();
         return;
     }
-    _desiredTranslation[a] = v;
-    _translationStep[a] = (_desiredTranslation[a] - _translation[a]) * _parent->fpsDelay() / msecs;
-    if (_translationStep[a] != 0.0) { // need to animate
+    m_translation.target[a] = v;
+    m_translation.step[a] = (m_translation.target[a] - m_translation.value[a]) * _parent->fpsDelay() / msecs;
+    if (m_translation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -741,21 +741,21 @@ void QGLImage::moveTo(Axis a, float percent, int msecs)
 void QGLImage::moveTo(float xPercent, float yPercent, float zPercent, bool update)
 {
     // stop running animations
-    if (_translationStep[X] != 0.0) {
+    if (m_translation.step[X] != 0.0) {
         --_activeAnimations;
-        _translationStep[X] = 0.0;
+        m_translation.step[X] = 0.0;
     }
-    if (_translationStep[Y] != 0.0) {
+    if (m_translation.step[Y] != 0.0) {
         --_activeAnimations;
-        _translationStep[Y] = 0.0;
+        m_translation.step[Y] = 0.0;
     }
-    if (_translationStep[Z] != 0.0) {
+    if (m_translation.step[Z] != 0.0) {
         --_activeAnimations;
-        _translationStep[Z] = 0.0;
+        m_translation.step[Z] = 0.0;
     }
-    _translation[X] = -1.0 + xPercent / 50.0;
-    _translation[Y] = 1.0 - yPercent * _parent->height() / (50.0 * _parent->width());
-    _translation[Z] = (50.0 - zPercent) / 100.0;
+    m_translation.value[X] = -1.0 + xPercent / 50.0;
+    m_translation.value[Y] = 1.0 - yPercent * _parent->height() / (50.0 * _parent->width());
+    m_translation.value[Z] = (50.0 - zPercent) / 100.0;
     if (update)
         _parent->updateGL();
 }
@@ -800,7 +800,7 @@ void QGLImage::addShader(GLhandleARB shader, bool linkProgram, bool update)
         _sTime = glGetUniformLocationARB(_shaderProgram, "time");
         glUniform3fARB(_sColor, _color[0], _color[1], _color[2]);
         glUniform1fARB(_sAlpha, _colorI[3]);
-        glUniform1fARB(_sBrightness, _brightness - 1.0);
+        glUniform1fARB(_sBrightness, m_brightness.value - 1.0);
         glUniform1fARB(_sInverted, _inverted ? 1.0 : 0.0);
         glUniform1fARB(_sTime, 0.0);
         if (update)
@@ -874,21 +874,21 @@ QGLImageViewer::QGLImageViewer(QWidget* parent, const char* name, float fps, boo
     setAccessibleName(name);
     _fpsDelay = (uint)(1000 / fps);
     for (int i = 0; i < 3; ++i) {
-        _scale[i] = 1.0;
-        _rotation[i] = 0.0;
-        _translation[i] = 0.0;
+        m_scale.value[i] = 1.0;
+        m_rotation.value[i] = 0.0;
+        m_translation.value[i] = 0.0;
 
-        _scaleStep[i] = 0.0;
-        _rotationStep[i] = 0.0;
-        _translationStep[i] = 0.0;
+        m_scale.step[i] = 0.0;
+        m_rotation.step[i] = 0.0;
+        m_translation.step[i] = 0.0;
 
-        _desiredScale[i] = 0.0;
-        _desiredRotation[i] = 0.0;
-        _desiredTranslation[i] = 0.0;
+        m_scale.target[i] = 0.0;
+        m_rotation.target[i] = 0.0;
+        m_translation.target[i] = 0.0;
 
         _canvasColor[i] = 0.0;
     }
-    _translation[Z] = -3.0;
+    m_translation.value[Z] = -3.0;
     _messageTimeOut = 0;
     _messageColor[3] = 0.0;
 
@@ -912,8 +912,8 @@ QGLImageViewer::~QGLImageViewer()
     for (it = _images.begin(); it != _images.end(); ++it) {
         glDeleteLists((*it).glObject(), 1);
         glDeleteTextures((*it)._texAmount, (*it)._textures);
-        glDeleteLists((*it)._blurObj, 1);
-        glDeleteTextures(1,  &(*it)._blurTex);
+        glDeleteLists((*it).m_blur.object, 1);
+        glDeleteTextures(1,  &(*it).m_blur.texture);
         // Qt deletes this one... (later on)
 //       if ((*it)._textures) { delete (*it)._textures; (*it)._textures = 0L; }
     }
@@ -942,9 +942,9 @@ void QGLImageViewer::remove(uint id)
                     // this is the only image on it's glList
                     makeCurrent();
                     glDeleteLists((*it2).glObject(), 1);
-                    glDeleteLists((*it2)._blurObj, 1);
+                    glDeleteLists((*it2).m_blur.object, 1);
                     glDeleteTextures((*it2)._texAmount, (*it2)._textures);
-                    glDeleteTextures(1,  &(*it2)._blurTex);
+                    glDeleteTextures(1,  &(*it2).m_blur.texture);
                     if ((*it2)._textures) {
                         delete(*it2)._textures;
                         (*it2)._textures = 0L;
@@ -959,24 +959,24 @@ void QGLImageViewer::remove(uint id)
     }
 }
 
-void QGLImageViewer::handleAnimationsPrivate(float(*value)[3], float(*desiredValue)[3], float(*valueStep)[3], int *animCounter)
+void QGLImageViewer::handleAnimationsPrivate(Attribute &a, int &animCounter)
 {
-    if (!(*animCounter))
+    if (!animCounter)
         return;
     for (int i = 0; i < 3; ++i) {
-        if ((*valueStep)[i] != 0.0) {
-            (*value)[i] += (*valueStep)[i];
-            if (((*valueStep)[i] > 0.0 && (*value)[i] >= (*desiredValue)[i]) ||
-                ((*valueStep)[i] < 0.0 && (*value)[i] <= (*desiredValue)[i])) { // we're done with this
-                (*valueStep)[i] = 0.0;
-                (*value)[i] = (*desiredValue)[i]; // make sure we have a match
-                if ((float*)value == _rotation) {
-                    (*value)[i] -= (int((*value)[i]) / 360) * 360.0f;
-                    if ((*value)[i] < 0.0f)
-                        (*value)[i] = 360.0f + (*value)[i];
+        if (a.step[i] != 0.0) {
+            a.value[i] += a.step[i];
+            if ((a.step[i] > 0.0 && a.value[i] >= a.target[i]) ||
+                (a.step[i] < 0.0 && a.value[i] <= a.target[i])) { // we're done with this
+                a.step[i] = 0.0;
+                a.value[i] = a.target[i]; // make sure we have a match
+                if (&a == &m_rotation) {
+                    a.value[i] -= (int(a.value[i]) / 360) * 360.0f;
+                    if (a.value[i] < 0.0f)
+                        a.value[i] = 360.0f + a.value[i];
                 }
-                --(*animCounter);
-                if (!(*animCounter))
+                --animCounter;
+                if (!animCounter)
                     break; // no need to test move/rotate
             }
         }
@@ -993,9 +993,9 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
     // view ========
     if (_activeAnimations) {
         // scale, move, rotate
-        handleAnimationsPrivate(&_scale, &_desiredScale, &_scaleStep, &_activeAnimations);
-        handleAnimationsPrivate(&_translation, &_desiredTranslation, &_translationStep, &_activeAnimations);
-        handleAnimationsPrivate(&_rotation, &_desiredRotation, &_rotationStep, &_activeAnimations);
+        handleAnimationsPrivate(m_scale, _activeAnimations);
+        handleAnimationsPrivate(m_translation, _activeAnimations);
+        handleAnimationsPrivate(m_rotation, _activeAnimations);
         // message timer
         if (_messageTimeOut > 0) {
             --_messageTimeOut;
@@ -1013,9 +1013,9 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         if (!it->_activeAnimations)
             continue;
         // scale, move, rotate
-        handleAnimationsPrivate(&it->_scale, &it->_desiredScale, &it->_scaleStep, &it->_activeAnimations);
-        handleAnimationsPrivate(&it->_translation, &it->_desiredTranslation, &it->_translationStep, &it->_activeAnimations);
-        handleAnimationsPrivate(&it->_rotation, &it->_desiredRotation, &it->_rotationStep, &it->_activeAnimations);
+        handleAnimationsPrivate(it->m_scale, it->_activeAnimations);
+        handleAnimationsPrivate(it->m_translation, it->_activeAnimations);
+        handleAnimationsPrivate(it->m_rotation, it->_activeAnimations);
         // alpha
         if (it->_colorStep[3] != 0.0) {
             float &aS = it->_colorStep[3], &a = it->_colorI[3], &dA = it->_desiredColor[3];
@@ -1060,8 +1060,8 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
             mergeCnB(*it);
         }
         // brightness
-        if (it->_brightnessStep != 0.0) {
-            float &bS = it->_brightnessStep, &b = it->_brightness, &dB = it->_desiredBrightness;
+        if (it->m_brightness.step != 0.0) {
+            float &bS = it->m_brightness.step, &b = it->m_brightness.value, &dB = it->m_brightness.target;
             b += bS;
             if ((bS > 0.0 && b >= dB) || (bS < 0.0 && b <= dB)) { // we're done with this
                 bS = 0.0;
@@ -1071,13 +1071,13 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
             if (it->_shaderProgram) {
                 makeCurrent();
                 glUseProgramObjectARB(it->_shaderProgram); // this seems to be necessary
-                glUniform1fARB(it->_sBrightness, it->_brightness - 1.0);
+                glUniform1fARB(it->_sBrightness, it->m_brightness.value - 1.0);
             }
             mergeCnB(*it);
         }
         // blur
-        if (it->_blurStep != 0.0) {
-            float &bS = it->_blurStep, &b = it->_blur, &dB = it->_desiredBlur;
+        if (it->m_blur.step != 0.0) {
+            float &bS = it->m_blur.step, &b = it->m_blur.value, &dB = it->m_blur.target;
             b += bS;
             blur(*it);
             if ((bS > 0.0 && b >= dB) || (bS < 0.0 && b <= dB)) { // we're done with this
@@ -1107,11 +1107,11 @@ void QGLImageViewer::paintGL()
     }
 
     glPushMatrix();
-    glScalef(_scale[X], _scale[Y], _scale[Z]);
-    glTranslatef(_translation[X], _translation[Y], _translation[Z]);
-    glRotatef(_rotation[X], 1.0, 0.0, 0.0);
-    glRotatef(_rotation[Y], 0.0, 1.0, 0.0);
-    glRotatef(_rotation[Z], 0.0, 0.0, 1.0);
+    glScalef(m_scale.value[X], m_scale.value[Y], m_scale.value[Z]);
+    glTranslatef(m_translation.value[X], m_translation.value[Y], m_translation.value[Z]);
+    glRotatef(m_rotation.value[X], 1.0, 0.0, 0.0);
+    glRotatef(m_rotation.value[Y], 0.0, 1.0, 0.0);
+    glRotatef(m_rotation.value[Z], 0.0, 0.0, 1.0);
     QGLImageList::iterator it;
     for (it = _images.begin(); it != _images.end(); ++it)
         (*it).paint();
@@ -1262,8 +1262,8 @@ void QGLImageViewer::mousePressEvent(QMouseEvent * e)
     if (!_interactive)
         return;
     _lastPos = e->pos();
-    _scaleTarget[X] = _translation[X] - (2.0 * e->pos().x() / width() - 1.0) / (_scale[X] * 3.0 / -_translation[Z]);
-    _scaleTarget[Y] = _translation[Y] + (2.0 * e->pos().y() - height()) / ((_scale[Y] * 3.0 / -_translation[Z]) * width());
+    _scaleTarget[X] = m_translation.value[X] - (2.0 * e->pos().x() / width() - 1.0) / (m_scale.value[X] * 3.0 / -m_translation.value[Z]);
+    _scaleTarget[Y] = m_translation.value[Y] + (2.0 * e->pos().y() - height()) / ((m_scale.value[Y] * 3.0 / -m_translation.value[Z]) * width());
 }
 
 void QGLImageViewer::mouseReleaseEvent(QMouseEvent *)
@@ -1280,13 +1280,13 @@ void QGLImageViewer::mouseMoveEvent(QMouseEvent * e)
 
     if (e->modifiers() & Qt::ControlModifier) { // rotate
         setCursor(Qt::SizeAllCursor);
-        int sign = ((int)_rotation[X] % 360 > 90 && (int)_rotation[X] % 360 < 270) ? -1 : 1;
+        int sign = ((int)m_rotation.value[X] % 360 > 90 && (int)m_rotation.value[X] % 360 < 270) ? -1 : 1;
         if (e->modifiers() & Qt::ShiftModifier) { // X-Axis
             rotate(X, (float)(e->pos().y() - _lastPos.y()) / 3.0);
 //         if (e->modifiers() & Qt::AltModifier) // Y-Axis
             rotate(Y, (float)(sign * (e->pos().x() - _lastPos.x())) / 3.0);
         } else { // Z-Axis
-            if ((int)_rotation[Y] % 360 > 90 && (int)_rotation[Y] % 360 < 270)
+            if ((int)m_rotation.value[Y] % 360 > 90 && (int)m_rotation.value[Y] % 360 < 270)
                 sign = -sign;
             float diff1 = 180.0 * (e->pos().x() - _lastPos.x()) / width();
             if (e->pos().y() < height() / 2)
@@ -1310,20 +1310,20 @@ void QGLImageViewer::mouseMoveEvent(QMouseEvent * e)
         // scale
         float diff = 1.0 + (float)(e->pos().y() - _lastPos.y()) / 80.0;
         _lastPos = e->pos();
-        if (_scale[X] * diff != 0.0)
-            _scale[X] *= diff;
-        if (_scale[Y] * diff != 0.0)
-            _scale[Y] *= diff;
+        if (m_scale.value[X] * diff != 0.0)
+            m_scale.value[X] *= diff;
+        if (m_scale.value[Y] * diff != 0.0)
+            m_scale.value[Y] *= diff;
         // and shift the image (i.e. zoom to cursor)
-        _translation[X] += (_scaleTarget[X] - _translation[X]) / 6.0;
-        _translation[Y] += (_scaleTarget[Y] - _translation[Y]) / 6.0;
+        m_translation.value[X] += (_scaleTarget[X] - m_translation.value[X]) / 6.0;
+        m_translation.value[Y] += (_scaleTarget[Y] - m_translation.value[Y]) / 6.0;
         updateGL();
         return;
     }
 
     setCursor(Qt::BlankCursor);
-    _translation[X] += 2.0 * (e->pos().x() - _lastPos.x()) / (_scale[X] * 3.0 / -_translation[Z] * width());
-    _translation[Y] -= 2.0 * (e->pos().y() - _lastPos.y()) / (_scale[Y] * 3.0 / -_translation[Z] * width());
+    m_translation.value[X] += 2.0 * (e->pos().x() - _lastPos.x()) / (m_scale.value[X] * 3.0 / -m_translation.value[Z] * width());
+    m_translation.value[Y] -= 2.0 * (e->pos().y() - _lastPos.y()) / (m_scale.value[Y] * 3.0 / -m_translation.value[Z] * width());
     _lastPos = e->pos();
     updateGL();
 }
@@ -1382,7 +1382,7 @@ uint QGLImageViewer::load(const QGLImage &image, bool show)
 {
     uint id = newUniqueId();
     _images.append(QGLImage(this, id, image.glObject(), image._textures, image._texAmount, image.basicWidth(), image.basicHeight()));
-    _images.last()._blurObj = image._blurObj; _images.last()._blurTex = image._blurTex;
+    _images.last().m_blur.object = image.m_blur.object; _images.last().m_blur.texture = image.m_blur.texture;
     ObjectCounter::Iterator it = _objectCounter.find(image.glObject());
     if (it == _objectCounter.end())
         _objectCounter.insert(image.glObject(), 1);
@@ -1591,13 +1591,13 @@ uint QGLImageViewer::load(const QImage& img, bool show , int numPol, bool isGLFo
 void QGLImageViewer::blur(QGLImage &img)
 {
     // figure out text size
-    int texW = img._blurW, texH = img._blurH;
+    int texW = img.m_blur.width, texH = img.m_blur.height;
     if (!texW) {
         texW = 128;
         while (texW < 513 && texW < img.basicWidth() + 1)
             texW = (texW << 1);
         texW = (texW >> 1);
-        img._blurW = texW;
+        img.m_blur.width = texW;
     }
 
     if (!texH) {
@@ -1605,13 +1605,13 @@ void QGLImageViewer::blur(QGLImage &img)
         while (texH < 513 && texH < img.basicHeight() + 1)
             texH = (texH << 1);
         texH = (texH >> 1);
-        img._blurH = texH;
+        img.m_blur.height = texH;
     }
 
     float ratio = ((float)img.basicHeight()) / img.basicWidth();
-    int numPass = (int)img._blur;
+    int numPass = (int)img.m_blur.value;
 
-    float alpha = img._blur - numPass;
+    float alpha = img.m_blur.value - numPass;
     if (alpha < 0.001)
         alpha = 0.0;
     else if (1.0 - alpha < 0.001) {
@@ -1653,23 +1653,23 @@ void QGLImageViewer::blur(QGLImage &img)
 
     glMatrixMode(GL_MODELVIEW);
 
-    if (!img._blurTex) {
+    if (!img.m_blur.texture) {
         int size = (texW * texH) * 4 * sizeof(uint);
         uint *data = (uint*)new GLuint[size];
-        glGenTextures(1, &img._blurTex);
-        glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+        glGenTextures(1, &img.m_blur.texture);
+        glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, 4, texW, texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         delete [] data;
     }
 
-    if (!img._blurObj) {
+    if (!img.m_blur.object) {
         makeCurrent();
         // create new GLlist with the blur texture
-        img._blurObj = glGenLists(1);
-        glNewList(img._blurObj, GL_COMPILE);
-        glBindTexture(GL_TEXTURE_2D, img._blurTex);
+        img.m_blur.object = glGenLists(1);
+        glNewList(img.m_blur.object, GL_COMPILE);
+        glBindTexture(GL_TEXTURE_2D, img.m_blur.texture);
 //       glBegin(GL_QUADS);
 //       glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0*ratio, 0.0); //topleft
 //       glTexCoord2f(0.0, 1.0); glVertex3f(-1.0, 1.0*ratio, 0.0); //bottomleft
@@ -1722,7 +1722,7 @@ void QGLImageViewer::blur(QGLImage &img)
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-    if (img._blurType == 1) {
+    if (img.m_blur.type == 1) {
         const float factor = 4.0 / texW;
         const float factor2 = 4.0 / texH;
         for (int i = -numPass; i <= numPass; ++i) {
@@ -1730,14 +1730,14 @@ void QGLImageViewer::blur(QGLImage &img)
             glScalef(1.0 + factor * i, 1.0 + factor2 * i, 1.0); glCallList(img.glObject());
             glPopMatrix();
         }
-        glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+        glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
 
         if (alpha != 0.0) {
             ++numPass;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glColor4f(1.0, 1.0, 1.0, 1.0 - 2.0 / (2 * numPass + 1));
-            glCallList(img._blurObj);
+            glCallList(img.m_blur.object);
             glColor4f(1.0, 1.0, 1.0, 1.0 / (2 * numPass + 1));
             glPushMatrix();
             glScalef(1.0 - numPass * factor, 1.0 - numPass * factor2, 1.0); glCallList(img.glObject());
@@ -1748,11 +1748,11 @@ void QGLImageViewer::blur(QGLImage &img)
             glPopMatrix();
             glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);
             glBlendColor(1.0, 1.0,  1.0, alpha);
-            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img._blurObj);
+            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img.m_blur.object);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             --numPass;
             glColor4fv(color);
-            glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+            glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
         }
 
@@ -1764,14 +1764,14 @@ void QGLImageViewer::blur(QGLImage &img)
             glTranslatef(factor * i, 0.0, 0.0); glCallList(img.glObject());
             glPopMatrix();
         }
-        glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+        glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
 
         if (alpha != 0.0) {
             ++numPass;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glColor4f(1.0, 1.0, 1.0, 1.0 - 2.0 / (2 * numPass + 1));
-            glCallList(img._blurObj);
+            glCallList(img.m_blur.object);
             glColor4f(1.0, 1.0, 1.0, 1.0 / (2 * numPass + 1));
             glPushMatrix();
             glTranslatef(-numPass * factor, 0.0, 0.0); glCallList(img.glObject());
@@ -1781,11 +1781,11 @@ void QGLImageViewer::blur(QGLImage &img)
             glPopMatrix();
             glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);
             glBlendColor(1.0, 1.0,  1.0, alpha);
-            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img._blurObj);
+            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img.m_blur.object);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             --numPass;
             glColor4fv(color);
-            glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+            glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
         }
 
@@ -1795,28 +1795,28 @@ void QGLImageViewer::blur(QGLImage &img)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         for (int i = -numPass; i <= numPass; ++i) {
             glPushMatrix();
-            glTranslatef(0.0, factor * i, 0.0); glCallList(img._blurObj);
+            glTranslatef(0.0, factor * i, 0.0); glCallList(img.m_blur.object);
             glPopMatrix();
         }
-        glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+        glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
 
         if (alpha != 0.0) {
             ++numPass;
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glColor4f(1.0, 1.0, 1.0, 1.0 - 2.0 / (2 * numPass + 1));
-            glCallList(img._blurObj);
+            glCallList(img.m_blur.object);
             glColor4f(1.0, 1.0, 1.0, 1.0 / (2 * numPass + 1));
             glPushMatrix();
-            glTranslatef(0.0, -numPass * factor, 0.0); glCallList(img._blurObj);
+            glTranslatef(0.0, -numPass * factor, 0.0); glCallList(img.m_blur.object);
             glPopMatrix();
             glPushMatrix();
-            glTranslatef(0.0, numPass * factor, 0.0); glCallList(img._blurObj);
+            glTranslatef(0.0, numPass * factor, 0.0); glCallList(img.m_blur.object);
             glPopMatrix();
             glBlendFunc(GL_SRC_ALPHA, GL_CONSTANT_ALPHA);
             glBlendColor(1.0, 1.0,  1.0, alpha);
-            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img._blurObj);
-            glBindTexture(GL_TEXTURE_2D,  img._blurTex);
+            glColor4f(1.0, 1.0, 1.0, (1.0 - alpha)); glCallList(img.m_blur.object);
+            glBindTexture(GL_TEXTURE_2D,  img.m_blur.texture);
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, texW, texH, 0);
         }
     }
@@ -1835,19 +1835,19 @@ void QGLImageViewer::ensureTimerIsActive()
 void QGLImageViewer::rotate(Axis a, float degrees, int msecs)
 {
     // stop running animations
-    if (_rotationStep[a] != 0.0) {
+    if (m_rotation.step[a] != 0.0) {
         --_activeAnimations;
-        _rotationStep[a] = 0.0;
+        m_rotation.step[a] = 0.0;
     }
     float deg = a == Z ? -degrees : degrees;
     if (msecs == 0) {
-        _rotation[a] += deg;
+        m_rotation.value[a] += deg;
         updateGL();
         return;
     }
-    _desiredRotation[a] = _rotation[a] + deg;
-    _rotationStep[a] = deg * _fpsDelay / msecs;
-    if (_rotationStep[a] != 0.0) { // need to animate
+    m_rotation.target[a] = m_rotation.value[a] + deg;
+    m_rotation.step[a] = deg * _fpsDelay / msecs;
+    if (m_rotation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -1855,25 +1855,25 @@ void QGLImageViewer::rotate(Axis a, float degrees, int msecs)
 void QGLImageViewer::rotate(float xDegrees, float yDegrees, float zDegrees, bool update)
 {
     // stop running animations
-    if (_rotationStep[X] != 0.0) {
+    if (m_rotation.step[X] != 0.0) {
         --_activeAnimations;
-        _rotationStep[X] = 0.0;
+        m_rotation.step[X] = 0.0;
     }
-    if (_rotationStep[Y] != 0.0) {
+    if (m_rotation.step[Y] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Y] = 0.0;
+        m_rotation.step[Y] = 0.0;
     }
-    if (_rotationStep[Z] != 0.0) {
+    if (m_rotation.step[Z] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Z] = 0.0;
+        m_rotation.step[Z] = 0.0;
     }
-    _rotation[X] += xDegrees;
-    _rotation[Y] += yDegrees;
-    _rotation[Z] -= zDegrees;
+    m_rotation.value[X] += xDegrees;
+    m_rotation.value[Y] += yDegrees;
+    m_rotation.value[Z] -= zDegrees;
     for (int a = 0; a < 3; ++a) {
-        _rotation[a] -= (int(_rotation[a]) / 360) * 360.0f;
-        if (_rotation[a] < 0.0f)
-            _rotation[a] = 360.0f + _rotation[a];
+        m_rotation.value[a] -= (int(m_rotation.value[a]) / 360) * 360.0f;
+        if (m_rotation.value[a] < 0.0f)
+            m_rotation.value[a] = 360.0f + m_rotation.value[a];
     }
     if (update)
         updateGL();
@@ -1881,25 +1881,25 @@ void QGLImageViewer::rotate(float xDegrees, float yDegrees, float zDegrees, bool
 void QGLImageViewer::rotateTo(Axis a, float degrees, int msecs)
 {
     // stop running animations
-    if (_rotationStep[a] != 0.0) {
+    if (m_rotation.step[a] != 0.0) {
         --_activeAnimations;
-        _rotationStep[a] = 0.0;
+        m_rotation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _rotation[a] = degrees;
+        m_rotation.value[a] = degrees;
         updateGL();
         return;
     }
     //======
-    _desiredRotation[a] = degrees;
-    float diff = _desiredRotation[a] - _rotation[a];
+    m_rotation.target[a] = degrees;
+    float diff = m_rotation.target[a] - m_rotation.value[a];
     while (diff < 0.0) diff += 360.0;
     while (diff > 360.0) diff = 360.0;
     if (diff > 180.0) diff = 360.0 - diff;
-    _rotationStep[a] = diff * _fpsDelay / msecs;
-    if (_rotationStep[a] != 0.0) { // need to animate
-        if (_desiredRotation[a] < _rotation[a])
-            _rotationStep[a] = -_rotationStep[a];
+    m_rotation.step[a] = diff * _fpsDelay / msecs;
+    if (m_rotation.step[a] != 0.0) { // need to animate
+        if (m_rotation.target[a] < m_rotation.value[a])
+            m_rotation.step[a] = -m_rotation.step[a];
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -1908,26 +1908,26 @@ void QGLImageViewer::rotateTo(Axis a, float degrees, int msecs)
 void QGLImageViewer::rotateTo(float xDegrees, float yDegrees, float zDegrees, bool update)
 {
     // stop running animations
-    if (_rotationStep[X] != 0.0) {
+    if (m_rotation.step[X] != 0.0) {
         --_activeAnimations;
-        _rotationStep[X] = 0.0;
+        m_rotation.step[X] = 0.0;
     }
-    if (_rotationStep[Y] != 0.0) {
+    if (m_rotation.step[Y] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Y] = 0.0;
+        m_rotation.step[Y] = 0.0;
     }
-    if (_rotationStep[Z] != 0.0) {
+    if (m_rotation.step[Z] != 0.0) {
         --_activeAnimations;
-        _rotationStep[Z] = 0.0;
+        m_rotation.step[Z] = 0.0;
     }
-    _rotation[X] = xDegrees;
-    _rotation[Y] = yDegrees;
-    _rotation[Z] = zDegrees;
+    m_rotation.value[X] = xDegrees;
+    m_rotation.value[Y] = yDegrees;
+    m_rotation.value[Z] = zDegrees;
     for (int a = 0; a < 3; ++a) {
-        while (_rotation[a] > 360.0)
-            _rotation[a] -= 360.0;
-        while (_rotation[a] < 0.0)
-            _rotation[a] += 360.0;
+        while (m_rotation.value[a] > 360.0)
+            m_rotation.value[a] -= 360.0;
+        while (m_rotation.value[a] < 0.0)
+            m_rotation.value[a] += 360.0;
     }
     if (update)
         updateGL();
@@ -1938,18 +1938,18 @@ void QGLImageViewer::scale(Axis a, float percent, int msecs)
     if (a == Z) //invalid
         return;
     // stop running animations
-    if (_scaleStep[a] != 0.0) {
+    if (m_scale.step[a] != 0.0) {
         --_activeAnimations;
-        _scaleStep[a] = 0.0;
+        m_scale.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _scale[a] *= percent / 100.0;
+        m_scale.value[a] *= percent / 100.0;
         updateGL();
         return;
     }
-    _desiredScale[a] = _scale[a] * percent / 100.0;
-    _scaleStep[a] = (_desiredScale[a] - _scale[a]) * _fpsDelay / msecs;
-    if (_scaleStep[a] != 0.0) { // need to animate
+    m_scale.target[a] = m_scale.value[a] * percent / 100.0;
+    m_scale.step[a] = (m_scale.target[a] - m_scale.value[a]) * _fpsDelay / msecs;
+    if (m_scale.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -1957,16 +1957,16 @@ void QGLImageViewer::scale(Axis a, float percent, int msecs)
 void QGLImageViewer::scale(float xPercent, float yPercent, bool update)
 {
     // stop running animations
-    if (_scaleStep[X] != 0.0) {
+    if (m_scale.step[X] != 0.0) {
         --_activeAnimations;
-        _scaleStep[X] = 0.0;
+        m_scale.step[X] = 0.0;
     }
-    if (_scaleStep[Y] != 0.0) {
+    if (m_scale.step[Y] != 0.0) {
         --_activeAnimations;
-        _scaleStep[Y] = 0.0;
+        m_scale.step[Y] = 0.0;
     }
-    _scale[X] *= xPercent;
-    _scale[Y] *= yPercent;
+    m_scale.value[X] *= xPercent;
+    m_scale.value[Y] *= yPercent;
     if (update)
         updateGL();
 }
@@ -1975,18 +1975,18 @@ void QGLImageViewer::scaleTo(Axis a, float percent, int msecs)
     if (a == Z) //invalid
         return;
     // stop running animations
-    if (_scaleStep[a] != 0.0) {
+    if (m_scale.step[a] != 0.0) {
         --_activeAnimations;
-        _scaleStep[a] = 0.0;
+        m_scale.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _scale[a] = percent / 100.0;
+        m_scale.value[a] = percent / 100.0;
         updateGL();
         return;
     }
-    _desiredScale[a] = percent / 100.0;
-    _scaleStep[a] = (_desiredScale[a] - _scale[a]) * _fpsDelay / msecs;
-    if (_scaleStep[a] != 0.0) { // need to animate
+    m_scale.target[a] = percent / 100.0;
+    m_scale.step[a] = (m_scale.target[a] - m_scale.value[a]) * _fpsDelay / msecs;
+    if (m_scale.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -1994,16 +1994,16 @@ void QGLImageViewer::scaleTo(Axis a, float percent, int msecs)
 void QGLImageViewer::scaleTo(float xPercent, float yPercent, bool update)
 {
     // stop running animations
-    if (_scaleStep[X] != 0.0) {
+    if (m_scale.step[X] != 0.0) {
         --_activeAnimations;
-        _scaleStep[X] = 0.0;
+        m_scale.step[X] = 0.0;
     }
-    if (_scaleStep[Y] != 0.0) {
+    if (m_scale.step[Y] != 0.0) {
         --_activeAnimations;
-        _scaleStep[Y] = 0.0;
+        m_scale.step[Y] = 0.0;
     }
-    _scale[X] = xPercent / 100.0;
-    _scale[Y] = yPercent / 100.0;
+    m_scale.value[X] = xPercent / 100.0;
+    m_scale.value[Y] = yPercent / 100.0;
     if (update)
         updateGL();
 }
@@ -2017,18 +2017,18 @@ void QGLImageViewer::move(Axis a, float percent, int msecs)
     case Z: v = -50.0 * percent / 100.0; break;
     }
     // stop running animations
-    if (_translationStep[a] != 0.0) {
+    if (m_translation.step[a] != 0.0) {
         --_activeAnimations;
-        _translationStep[a] = 0.0;
+        m_translation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _translation[a] += v;
+        m_translation.value[a] += v;
         updateGL();
         return;
     }
-    _desiredTranslation[a] = _translation[a] + v;
-    _translationStep[a] = v * _fpsDelay / msecs;
-    if (_translationStep[a] != 0.0) { // need to animate
+    m_translation.target[a] = m_translation.value[a] + v;
+    m_translation.step[a] = v * _fpsDelay / msecs;
+    if (m_translation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -2036,21 +2036,21 @@ void QGLImageViewer::move(Axis a, float percent, int msecs)
 void QGLImageViewer::move(float xPercent, float yPercent, float zPercent, bool update)
 {
     // stop running animations
-    if (_translationStep[X] != 0.0) {
+    if (m_translation.step[X] != 0.0) {
         --_activeAnimations;
-        _translationStep[X] = 0.0;
+        m_translation.step[X] = 0.0;
     }
-    if (_translationStep[Y] != 0.0) {
+    if (m_translation.step[Y] != 0.0) {
         --_activeAnimations;
-        _translationStep[Y] = 0.0;
+        m_translation.step[Y] = 0.0;
     }
-    if (_translationStep[Z] != 0.0) {
+    if (m_translation.step[Z] != 0.0) {
         --_activeAnimations;
-        _translationStep[Z] = 0.0;
+        m_translation.step[Z] = 0.0;
     }
-    _translation[X] += -1.0 + xPercent / 50.0;
-    _translation[Y] += ((float)height()) / width() - yPercent * height() / (50.0 * width());
-    _translation[Z] -= 50.0 * zPercent / 100.0;
+    m_translation.value[X] += -1.0 + xPercent / 50.0;
+    m_translation.value[Y] += ((float)height()) / width() - yPercent * height() / (50.0 * width());
+    m_translation.value[Z] -= 50.0 * zPercent / 100.0;
     if (update)
         updateGL();
 }
@@ -2063,18 +2063,18 @@ void QGLImageViewer::moveTo(Axis a, float percent, int msecs)
     case Z: v = -3.0 - 47.0 * percent / 100.0; break;
     }
     // stop running animations
-    if (_translationStep[a] != 0.0) {
+    if (m_translation.step[a] != 0.0) {
         --_activeAnimations;
-        _translationStep[a] = 0.0;
+        m_translation.step[a] = 0.0;
     }
     if (msecs == 0) {
-        _translation[a] = v;
+        m_translation.value[a] = v;
         updateGL();
         return;
     }
-    _desiredTranslation[a] = v;
-    _translationStep[a] = (_desiredTranslation[a] - _translation[a]) * _fpsDelay / msecs;
-    if (_translationStep[a] != 0.0) { // need to animate
+    m_translation.target[a] = v;
+    m_translation.step[a] = (m_translation.target[a] - m_translation.value[a]) * _fpsDelay / msecs;
+    if (m_translation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
         ensureTimerIsActive();
     }
@@ -2082,21 +2082,21 @@ void QGLImageViewer::moveTo(Axis a, float percent, int msecs)
 void QGLImageViewer::moveTo(float xPercent, float yPercent, float zPercent, bool update)
 {
     // stop running animations
-    if (_translationStep[X] != 0.0) {
+    if (m_translation.step[X] != 0.0) {
         --_activeAnimations;
-        _translationStep[X] = 0.0;
+        m_translation.step[X] = 0.0;
     }
-    if (_translationStep[Y] != 0.0) {
+    if (m_translation.step[Y] != 0.0) {
         --_activeAnimations;
-        _translationStep[Y] = 0.0;
+        m_translation.step[Y] = 0.0;
     }
-    if (_translationStep[Z] != 0.0) {
+    if (m_translation.step[Z] != 0.0) {
         --_activeAnimations;
-        _translationStep[Z] = 0.0;
+        m_translation.step[Z] = 0.0;
     }
-    _translation[X] = -1.0 + xPercent / 50.0;
-    _translation[Y] = ((float)height()) / width() - yPercent * height() / (50.0 * width());
-    _translation[Z] = -3.0 - 47.0 * zPercent / 100.0;
+    m_translation.value[X] = -1.0 + xPercent / 50.0;
+    m_translation.value[Y] = ((float)height()) / width() - yPercent * height() / (50.0 * width());
+    m_translation.value[Z] = -3.0 - 47.0 * zPercent / 100.0;
     if (update)
         updateGL();
 }

@@ -119,13 +119,13 @@ private:
     bool iAmTouchy, dont_dragswitch;
 
 private:
-    void addToView(Image *client);
+    void addToView(Image *image);
     bool cacheIsReady();
     void changeColor(int key, int v);
     bool changeImage(int direction);
     QString currentImageInfo();
-    void load(Image *New, bool block = false);
-    void unload(Image *New);
+    void load(Image *image, bool block = false);
+    void unload(Image *image);
     void maxW(int ms); void resetView(int ms);
     void setupUI(const QString &startDir);
 

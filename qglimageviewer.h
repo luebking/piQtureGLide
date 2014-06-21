@@ -33,6 +33,12 @@ namespace QGLImageView
 
 class QGLImage;
 
+typedef struct {
+    GLfloat value[3];
+    GLfloat target[3];
+    GLfloat step[3];
+} Attribute;
+
 /**
 * The 3 axis of space
 */
@@ -102,7 +108,7 @@ public:
     */
     inline float position(Axis a) const
     {
-        return _translation[a];
+        return m_translation.value[a];
     }
 
     /**
@@ -112,7 +118,7 @@ public:
     */
     inline float rotation(Axis a) const
     {
-        return _rotation[a];
+        return m_rotation.value[a];
     }
 
     /**
@@ -122,7 +128,7 @@ public:
     */
     inline float scaleFactor(Axis a) const
     {
-        return _scale[a];
+        return m_scale.value[a];
     }
 
     /**
@@ -383,17 +389,8 @@ private:
     QGLImageList _images;
     typedef QMap<GLuint, uint> ObjectCounter;
     ObjectCounter _objectCounter;
-    GLfloat _scale[3];
-    GLfloat _desiredScale[3];
-    GLfloat _scaleStep[3];
 
-    GLfloat _translation[3];
-    GLfloat _desiredTranslation[3];
-    GLfloat _translationStep[3];
-
-    GLfloat _rotation[3];
-    GLfloat _desiredRotation[3];
-    GLfloat _rotationStep[3];
+    Attribute m_scale, m_translation, m_rotation;
 
     QStringList _message;
     QPoint _messagePos;
@@ -427,7 +424,7 @@ private:
 
 
 private:
-    void handleAnimationsPrivate(float(*value)[3], float(*desiredValue)[3], float(*valueStep)[3], int *animCounter);
+    void handleAnimationsPrivate(Attribute &a, int &animCounter);
     uint newUniqueId();
 
 };
@@ -534,7 +531,7 @@ public:
     */
     inline float brightness() const
     {
-        return _brightness * 100.0;
+        return m_brightness.value * 100.0;
     }
 
     /**
@@ -543,7 +540,7 @@ public:
     */
     inline float position(Axis a) const
     {
-        return _translation[a];
+        return m_translation.value[a];
     }
 
     /**
@@ -552,7 +549,7 @@ public:
     */
     inline float rotation(Axis a) const
     {
-        return _rotation[a];
+        return m_rotation.value[a];
     }
 
     /**
@@ -561,7 +558,7 @@ public:
     */
     inline float scaleFactor(Axis a) const
     {
-        return _scale[a];
+        return m_scale.value[a];
     }
 
     /**
@@ -737,7 +734,7 @@ public:
 
     inline float blurrage()
     {
-        return _blur;
+        return m_blur.value;
     }
 
     void setClipRect(int x, int y, int w, int h, bool update = true);
@@ -842,31 +839,23 @@ private:
     QGLImage(QGLImageViewer *parent, const uint id, const GLuint object, GLuint *textures, const int texAmount, int width, int height, bool hasAlpha = false);
 //    friend void QGLImageViewer::load( const QImage& img, bool show = false );
     friend class QGLImageViewer;
-    GLfloat _scale[3];
-    GLfloat _desiredScale[3];
-    GLfloat _scaleStep[3];
 
-    GLfloat _translation[3];
-    GLfloat _desiredTranslation[3];
-    GLfloat _translationStep[3];
-
-    GLfloat _rotation[3];
-    GLfloat _desiredRotation[3];
-    GLfloat _rotationStep[3];
+    Attribute m_scale, m_translation, m_rotation;
 
     GLfloat _color[3];
     GLfloat _colorI[4];
     GLfloat _desiredColor[4];
     GLfloat _colorStep[4];
 
-    GLfloat _brightness;
-    GLfloat _desiredBrightness;
-    GLfloat _brightnessStep;
+    struct {
+        GLfloat value, target, step;
+    } m_brightness;
 
-    GLfloat _blur;
-    GLfloat _desiredBlur;
-    GLfloat _blurStep;
-    int _blurType;
+    struct {
+        GLfloat value, target, step;
+        int type, width, height;
+        GLuint object, texture;
+    } m_blur;
 
     GLdouble _clip[4][4];
 
@@ -874,9 +863,6 @@ private:
 
     uint _id;
     GLuint _object;
-    GLuint _blurObj;
-    GLuint _blurTex;
-    int _blurW, _blurH;
     GLuint *_textures;
     int _texAmount;
     int _basicWidth, _basicHeight;
