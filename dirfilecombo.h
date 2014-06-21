@@ -27,14 +27,17 @@ class DirFileCombo : public QComboBox
 {
     Q_OBJECT
 public:
-    DirFileCombo( QWidget * parent = 0, QDir::Filter type = QDir::Dirs, const QString& startDir = QString() );
-    inline const QDir &currentDir() const { return iCurrentDir; }
-    void setEntries( const QStringList &list );
+    DirFileCombo(QWidget * parent = 0, QDir::Filter type = QDir::Dirs, const QString& startDir = QString());
+    inline const QDir &currentDir() const
+    {
+        return iCurrentDir;
+    }
+    void setEntries(const QStringList &list);
 signals:
-    void directoryChanged( const QString& ) const;
-    void textEntered( const QString& ) const;
+    void directoryChanged(const QString&) const;
+    void textEntered(const QString&) const;
 public slots:
-    void setDirectory( const QString& );
+    void setDirectory(const QString&);
 private slots:
     void textEntered() const;
 private:

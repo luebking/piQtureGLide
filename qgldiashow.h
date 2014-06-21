@@ -30,46 +30,43 @@ class QStringList;
 
 using namespace QGLImageView;
 
-enum FuncId
-{
-      wait = 0,/* assign,*/
-      loop, endloop, _for, endfor,
-      setCanvasColor, tintImage, setImageBrightness,
-      clipImage, blurImage,
-      loadImage, removeImage, copyImage,
-      showImage, hideImage,
-      rotateBy, rotateImageBy,
-      rotateTo, rotateImageTo,
-      moveBy, moveImageBy,
-      moveTo, moveImageTo,
-      scaleBy, scaleImageBy,
-      scaleTo, scaleImageTo,
-      setImageAlpha,
-      quit, requireVersion, _debug_,
-      INVALID
+enum FuncId {
+    wait = 0,/* assign,*/
+    loop, endloop, _for, endfor,
+    setCanvasColor, tintImage, setImageBrightness,
+    clipImage, blurImage,
+    loadImage, removeImage, copyImage,
+    showImage, hideImage,
+    rotateBy, rotateImageBy,
+    rotateTo, rotateImageTo,
+    moveBy, moveImageBy,
+    moveTo, moveImageTo,
+    scaleBy, scaleImageBy,
+    scaleTo, scaleImageTo,
+    setImageAlpha,
+    quit, requireVersion, _debug_,
+    INVALID
 };
 
 class Command
 {
 public:
-   Command(){}
-   Command(int _line, FuncId _function, void **_parameter = 0L, int _numParameters = 0, bool *varlist = 0L)
-   {
-      line = _line;
-      function = _function;
-      numParameters = _numParameters;
-      if (numParameters)
-      {
-         parameter = new void*[numParameters];
-         for (int i = 0; i < numParameters; ++i)
-            parameter[i] = _parameter[i];
-      }
-      else
-         parameter = 0L;
-      isVariable = varlist;
-   }
-   ~Command()
-   {
+    Command() {}
+    Command(int _line, FuncId _function, void **_parameter = 0L, int _numParameters = 0, bool *varlist = 0L)
+    {
+        line = _line;
+        function = _function;
+        numParameters = _numParameters;
+        if (numParameters) {
+            parameter = new void*[numParameters];
+            for (int i = 0; i < numParameters; ++i)
+                parameter[i] = _parameter[i];
+        } else
+            parameter = 0L;
+        isVariable = varlist;
+    }
+    ~Command()
+    {
 //       if (isVariable) delete isVariable;
 //       if (parameter)
 //       {
@@ -77,77 +74,75 @@ public:
 //             delete parameter[i];
 //          delete parameter;
 //       }
-   }
-   FuncId function;
-   void **parameter;
-   bool *isVariable;
-   int numParameters, line;
+    }
+    FuncId function;
+    void **parameter;
+    bool *isVariable;
+    int numParameters, line;
 };
 
 class KGLDiaShow : public QWidget
 {
-   Q_OBJECT
+    Q_OBJECT
 public:
-   KGLDiaShow( QWidget* parent = 0, const char* name = 0 );
-   void run(QString file);
+    KGLDiaShow(QWidget* parent = 0, const char* name = 0);
+    void run(QString file);
 
 private:
-   enum Type { Int = 0, UInt, Axis, Float, String };
-   class Function
-   {
-   public:
-      Function(){}
-      Function(FuncId _id, uint _max, Type *_type = 0L, int _min = -1)
-      {
-         id = _id;
-         max = _max;
-         min = (_min > -1) ? _min : max;
-         if (max)
-         {
-            type = new Type[max];
-            for (uint i = 0; i < max; ++i)
-               type[i] = _type[i];
-         }
-         else
-            type = 0L;
-      }
-      ~Function()
-      {
+    enum Type { Int = 0, UInt, Axis, Float, String };
+    class Function
+    {
+    public:
+        Function() {}
+        Function(FuncId _id, uint _max, Type *_type = 0L, int _min = -1)
+        {
+            id = _id;
+            max = _max;
+            min = (_min > -1) ? _min : max;
+            if (max) {
+                type = new Type[max];
+                for (uint i = 0; i < max; ++i)
+                    type[i] = _type[i];
+            } else
+                type = 0L;
+        }
+        ~Function()
+        {
 //          if (type) delete type;
-      }
-      FuncId id;
-      int min;
-      uint max;
-      Type *type;
-   };
-   QGLImageViewer* view;
-   typedef QMap<QString, uint> VariableList;
-   VariableList variableList;
-   typedef QMap<QString, Function> FunctionList;
-   FunctionList functionList;
-   typedef QList<Command> CommandList;
-   CommandList commands;
+        }
+        FuncId id;
+        int min;
+        uint max;
+        Type *type;
+    };
+    QGLImageViewer* view;
+    typedef QMap<QString, uint> VariableList;
+    VariableList variableList;
+    typedef QMap<QString, Function> FunctionList;
+    FunctionList functionList;
+    typedef QList<Command> CommandList;
+    CommandList commands;
 
-   int commandCounter;
-   int currentLine;
-   uint lastLoadedImage;
-   bool _debug;
+    int commandCounter;
+    int currentLine;
+    uint lastLoadedImage;
+    bool _debug;
 
 private:
-   Command command(QString & string);
-   void exec(const Command &command);
-   QGLImageView::Axis axis(const QString &string, bool *ok) const;
-   QGLImage *image(uint image) const;
-   uint variableValue(const QString &string);
-   const char *functionString(FuncId id) const;
-   const char *typeString(Type tp) const;
+    Command command(QString & string);
+    void exec(const Command &command);
+    QGLImageView::Axis axis(const QString &string, bool *ok) const;
+    QGLImage *image(uint image) const;
+    uint variableValue(const QString &string);
+    const char *functionString(FuncId id) const;
+    const char *typeString(Type tp) const;
 
-   QStack<int> loopBegin;
-   QStack<int> loopCounter;
-   QStack<QString> forList;
+    QStack<int> loopBegin;
+    QStack<int> loopCounter;
+    QStack<QString> forList;
 
 private slots:
-   void nextCommand();
+    void nextCommand();
 };
 
 

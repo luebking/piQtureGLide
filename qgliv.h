@@ -41,7 +41,7 @@ class QGLIV;
 class Image
 {
 public:
-    Image( QGLImage *image = 0, int idx = -1 );
+    Image(QGLImage *image = 0, int idx = -1);
     QGLImage *image;
     QImage *qGlImage;
     int index;
@@ -55,23 +55,33 @@ public:
     enum Effect { Crossfade = 1, FadeOutAndIn,
                   HorizontalRotation, VerticalRotation,
                   HorizontalSlide, VerticalSlide, ZSlide,
-                  KnownEffects };
-    QGLIV( QWidget* parent = 0, const char* name = 0 );
-    bool filterMatches( int index ) const;
+                  KnownEffects
+                };
+    QGLIV(QWidget* parent = 0, const char* name = 0);
+    bool filterMatches(int index) const;
 
-    inline bool autoSize() { return ( features & ( Autosize | Diashow ) ); }
-    inline bool cycle() { return ( features & ( Cycle | Diashow ) ); }
-    inline bool showMessage() { return ( features & ( ShowMessage | Diashow ) ) == ShowMessage; }
+    inline bool autoSize()
+    {
+        return (features & (Autosize | Diashow));
+    }
+    inline bool cycle()
+    {
+        return (features & (Cycle | Diashow));
+    }
+    inline bool showMessage()
+    {
+        return (features & (ShowMessage | Diashow)) == ShowMessage;
+    }
 
 signals:
-    void cacheReady( const QString& ) const;
+    void cacheReady(const QString&) const;
     void imageChanged() const;
 
 protected:
-    virtual bool eventFilter ( QObject * watched, QEvent * e );
+    virtual bool eventFilter(QObject * watched, QEvent * e);
 
 protected:
-    friend void loadImage( void *qgliv, Image *client );
+    friend void loadImage(void *qgliv, Image *client);
     bool filterIsDirty;
     QRegExp filter;
     QStringList files;
@@ -109,32 +119,32 @@ private:
     bool iAmTouchy, dont_dragswitch;
 
 private:
-    void addToView( Image *client );
+    void addToView(Image *client);
     bool cacheIsReady();
-    void changeColor( int key, int v );
-    bool changeImage( int direction );
+    void changeColor(int key, int v);
+    bool changeImage(int direction);
     QString currentImageInfo();
-    void load( Image *New, bool block = false );
-    void unload( Image *New );
-    void maxW( int ms ); void resetView( int ms );
-    void setupUI( const QString &startDir );
+    void load(Image *New, bool block = false);
+    void unload(Image *New);
+    void maxW(int ms); void resetView(int ms);
+    void setupUI(const QString &startDir);
 
 private slots:
     void clearFilter();
-    void setDirectory( const QString &dir );
+    void setDirectory(const QString &dir);
     void dirLoaded();
     void finishImageChange();
     void imageLoaded();
     void init();
     void setAnimationDone();
     void tryChangeImage();
-    bool setFilter( const QString & );
-    void jumpTo( const QString & );
-    void setCycle( bool );
-    void setDiaShow( bool );
-    void setDiaShowTime( double );
-    void setAutosize( bool );
-    void setTransitionEffect( int );
+    bool setFilter(const QString &);
+    void jumpTo(const QString &);
+    void setCycle(bool);
+    void setDiaShow(bool);
+    void setDiaShowTime(double);
+    void setAutosize(bool);
+    void setTransitionEffect(int);
 private slots:
     void saveSettings();
     void editImage();
@@ -147,9 +157,15 @@ private slots:
     void moveUp(); void moveDown();
 
     void zoomIn(); void zoomOut();
-    void zoom( int dir ); void resetZoomSlider();
-    inline void maxW() { maxW( 520 ); };
-    inline void resetView() { resetView( 520 ); }
+    void zoom(int dir); void resetZoomSlider();
+    inline void maxW()
+    {
+        maxW(520);
+    };
+    inline void resetView()
+    {
+        resetView(520);
+    }
 
     void r90cw(); void r90ccw();
     void XRotate(int); void YRotate(int); void ZRotate(int);
@@ -162,15 +178,15 @@ private slots:
 
     void gammaUp(); void gammaDown();
 
-    void setCanvasValue( int );
+    void setCanvasValue(int);
     void redUp(); void redDown();
     void greenUp(); void greenDown();
     void blueUp(); void blueDown();
     void alphaUp(); void alphaDown();
     void invert(); void resetColors();
-    void setRed( int ); void setGreen( int );
-    void setBlue( int ); void setAlpha( int );
-    void setGamma( int );
+    void setRed(int); void setGreen(int);
+    void setBlue(int); void setAlpha(int);
+    void setGamma(int);
 
     void blurLess(); void blurMore();
     void tunnelLess(); void tunnelMore();

@@ -23,111 +23,111 @@
 #include <QLineEdit>
 #include <QtDebug>
 
-DirFileCombo::DirFileCombo( QWidget * parent, QDir::Filter type, const QString& startDir ) :
-QComboBox( parent )
+DirFileCombo::DirFileCombo(QWidget * parent, QDir::Filter type, const QString& startDir) :
+    QComboBox(parent)
 {
-    if ( type == QDir::Files )
+    if (type == QDir::Files)
         iType = QDir::Files;
     else
         iType = QDir::Dirs;
 
-    setEditable( true );
-    setInsertPolicy( NoInsert );
+    setEditable(true);
+    setInsertPolicy(NoInsert);
 
     if (startDir != "none") {
-        if ( !startDir.isEmpty() )
+        if (!startDir.isEmpty())
             iCurrentDir = QDir(startDir);
 
-        if ( !iCurrentDir.exists() )
+        if (!iCurrentDir.exists())
             iCurrentDir = QDir::current();
 
         iCurrentDir.makeAbsolute();
 
         QString path = iCurrentDir.path() + QDir::separator();
         iCurrentDir = QDir(" ");
-        setDirectory( path );
+        setDirectory(path);
     }
 
-    if ( type == QDir::Dirs )
-        connect ( this, SIGNAL( editTextChanged(const QString &) ), this, SLOT( setDirectory(const QString &) ) );
+    if (type == QDir::Dirs)
+        connect(this, SIGNAL(editTextChanged(const QString &)), this, SLOT(setDirectory(const QString &)));
 
-    connect ( lineEdit(), SIGNAL( returnPressed() ), this, SLOT( textEntered() ) );
+    connect(lineEdit(), SIGNAL(returnPressed()), this, SLOT(textEntered()));
 }
 
 void
-DirFileCombo::setEntries( const QStringList &newList )
+DirFileCombo::setEntries(const QStringList &newList)
 {
     if (iType == QDir::Dirs)
         return; // ah-ahh...
 
     clear();
     QStringList list = newList;
-    for ( int i = 0; i < list.count(); ++i )
-        list[i] = QFileInfo( list.at(i) ).fileName();
-    addItems( list );
+    for (int i = 0; i < list.count(); ++i)
+        list[i] = QFileInfo(list.at(i)).fileName();
+    addItems(list);
     delete completer();
-    QCompleter *comp = new QCompleter( list, this );
-    comp->setCaseSensitivity( Qt::CaseInsensitive );
-    comp->setCompletionMode( QCompleter::InlineCompletion );
+    QCompleter *comp = new QCompleter(list, this);
+    comp->setCaseSensitivity(Qt::CaseInsensitive);
+    comp->setCompletionMode(QCompleter::InlineCompletion);
     setCompleter(comp);
 }
 
 void
-DirFileCombo::setDirectory( const QString &path )
+DirFileCombo::setDirectory(const QString &path)
 {
     QDir::Filters filter = iType | QDir::Readable | QDir::NoDotAndDotDot;
     QStringList list;
     blockSignals(true);
 
-    if (iType == QDir::Dirs)
-    {
+    if (iType == QDir::Dirs) {
         QString fullPath = QFileInfo(path).absolutePath();
-        if ( !path.endsWith( QDir::separator() ) && fullPath == QFileInfo( iCurrentDir.path() ).absolutePath() )
-            { blockSignals(false); return; }
+        if (!path.endsWith(QDir::separator()) && fullPath == QFileInfo(iCurrentDir.path()).absolutePath()) {
+            blockSignals(false);
+            return;
+        }
 
-        QDir dir( fullPath );
-        if ( dir.exists() )
-        {
-            if ( dir == iCurrentDir )
-                { blockSignals(false); return; }
+        QDir dir(fullPath);
+        if (dir.exists()) {
+            if (dir == iCurrentDir) {
+                blockSignals(false);
+                return;
+            }
 
             clear();
             iCurrentDir = dir;
-            list = iCurrentDir.entryList( filter | QDir::Executable, QDir::Name );
+            list = iCurrentDir.entryList(filter | QDir::Executable, QDir::Name);
             fullPath = iCurrentDir.path() + QDir::separator();
-            for ( int i = 0; i < list.count(); ++i )
+            for (int i = 0; i < list.count(); ++i)
                 list[i].prepend(fullPath);
-            list.prepend( iCurrentDir.path() );
-            addItems( list );
+            list.prepend(iCurrentDir.path());
+            addItems(list);
             blockSignals(false);
-            emit currentIndexChanged( fullPath );
+            emit currentIndexChanged(fullPath);
             blockSignals(true);
-            setEditText ( path );
-        }
-        else
-            setEditText ( iCurrentDir.path() + QDir::separator() );
+            setEditText(path);
+        } else
+            setEditText(iCurrentDir.path() + QDir::separator());
     }
 
-    else if ( iType == QDir::Files )
-    {
+    else if (iType == QDir::Files) {
         clear();
-        iCurrentDir = QDir( path );
-        if ( !iCurrentDir.exists() )
-        {
+        iCurrentDir = QDir(path);
+        if (!iCurrentDir.exists()) {
             iCurrentDir = QDir(" ");
             blockSignals(false);
             return;
         }
-        addItems( iCurrentDir.entryList( filter, QDir::Name ) );
-        setEditText ( QString() );
+        addItems(iCurrentDir.entryList(filter, QDir::Name));
+        setEditText(QString());
+    } else { // should not happen at all
+        blockSignals(false);
+        return;
     }
-    else // should not happen at all
-        { blockSignals(false); return; }
 
     delete completer();
-    QCompleter *comp = new QCompleter( list, this );
-    comp->setCaseSensitivity( Qt::CaseInsensitive );
-    comp->setCompletionMode( QCompleter::InlineCompletion );
+    QCompleter *comp = new QCompleter(list, this);
+    comp->setCaseSensitivity(Qt::CaseInsensitive);
+    comp->setCompletionMode(QCompleter::InlineCompletion);
     setCompleter(comp);
 
     blockSignals(false);
@@ -136,6 +136,6 @@ DirFileCombo::setDirectory( const QString &path )
 void
 DirFileCombo::textEntered() const
 {
-    emit textEntered( lineEdit()->text() );
+    emit textEntered(lineEdit()->text());
 }
 

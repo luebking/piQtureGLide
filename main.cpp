@@ -23,27 +23,26 @@
 #include "qgliv.h"
 // #include <qgl.h>
 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
 //     setenv("__GL_SYNC_TO_VBLANK", "1", 1);
 
-    QApplication::setColorSpec( QApplication::CustomColor );
-    QApplication a(argc,argv);
+    QApplication::setColorSpec(QApplication::CustomColor);
+    QApplication a(argc, argv);
 
-    if ( !QGLFormat::hasOpenGL() )
-    {
-        qWarning( "This system has no OpenGL support. Exiting." );
+    if (!QGLFormat::hasOpenGL()) {
+        qWarning("This system has no OpenGL support. Exiting.");
         return -1;
     }
 
     QSettings settings("piQtureGLide");
     QGLFormat f;
-    f.setDirectRendering( settings.value("GLDirect", true).toBool() );
-    f.setSwapInterval( settings.value("GLSync", 1).toUInt() );
+    f.setDirectRendering(settings.value("GLDirect", true).toBool());
+    f.setSwapInterval(settings.value("GLSync", 1).toUInt());
     QGLFormat::setDefaultFormat(f);
 
     QGLIV* gliv = new QGLIV;
-    gliv->resize( 1000, 620 );
+    gliv->resize(1000, 620);
     gliv->show();
 
     int result = a.exec();

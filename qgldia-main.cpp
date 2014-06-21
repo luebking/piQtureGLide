@@ -22,25 +22,23 @@
 #include "kgldiashow.h"
 // #include <qgl.h>
 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
-   if (argc != 2)
-   {
-   qWarning( "Usage: %s <diashow>",argv[0] );
-      return 1;
-   }
-    QApplication::setColorSpec( QApplication::CustomColor );
-    QApplication a(argc,argv);
+    if (argc != 2) {
+        qWarning("Usage: %s <diashow>", argv[0]);
+        return 1;
+    }
+    QApplication::setColorSpec(QApplication::CustomColor);
+    QApplication a(argc, argv);
 
-   if ( !QGLFormat::hasOpenGL() )
-   {
-      qWarning( "This system has no OpenGL support. Exiting." );
-      return -1;
-   }
-   KGLDiaShow* w = new KGLDiaShow();
-   w->showFullScreen();
-   w->run(QString(argv[1]));
-   int result = a.exec();
-   delete w;
-   return result;
+    if (!QGLFormat::hasOpenGL()) {
+        qWarning("This system has no OpenGL support. Exiting.");
+        return -1;
+    }
+    KGLDiaShow* w = new KGLDiaShow();
+    w->showFullScreen();
+    w->run(QString(argv[1]));
+    int result = a.exec();
+    delete w;
+    return result;
 }
