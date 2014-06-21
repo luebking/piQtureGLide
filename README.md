@@ -1,3 +1,9 @@
+!!!NOTICE!!!
+This is old code - it works, but the codebase is crap.
+Moved to github to refactor
+You can use this, but don't you dare to tell me that i wrote
+nonsense 10 years ago ;-)
+
 piQtureGLide
 ==============
 A simple Imageviewer on top of OpenGL.
