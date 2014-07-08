@@ -24,6 +24,7 @@
 #include <QFrame>
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QGesture>
 #include <QHBoxLayout>
 #include <QImageReader>
 #include <QInputEvent>
@@ -167,6 +168,13 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
 
     //BEGIN  Create & setup the GL viewport                  .
     view = new QGLImageView::QGLImageViewer(this, "glbox1");
+    view->setAttribute(Qt::WA_AcceptTouchEvents);
+    view->grabGesture(Qt::TapGesture);
+    view->grabGesture(Qt::TapAndHoldGesture);
+    view->grabGesture(Qt::PanGesture);
+    view->grabGesture(Qt::PinchGesture);
+    view->grabGesture(Qt::SwipeGesture);
+
     if (view->providesShaders()) {
 #define xstr(s) str(s)
 #define str(s) #s
@@ -749,6 +757,11 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
             resetView();
         else
             maxW();
+    }
+
+    else if (e->type() == QEvent::Gesture) {
+        foreach (const QGesture *g, static_cast<QGestureEvent*>(e)->activeGestures())
+            qDebug() << g->gestureType();
     }
 
     return false;
