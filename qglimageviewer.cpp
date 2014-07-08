@@ -103,23 +103,23 @@ QGLImage::QGLImage(QGLImageViewer *parent, const uint id, const GLuint object,
         m_scale.value[i] = 1.0;
         m_rotation.value[i] = 0.0;
         m_translation.value[i] = 0.0;
-        _color[i] = 1.0;
-        _colorI[i] = 0;
+        m_color.value[i] = 1.0;
+        m_color.internal[i] = 0;
 
         m_scale.step[i] = 0.0;
         m_rotation.step[i] = 0.0;
         m_translation.step[i] = 0.0;
-        _colorStep[i] = 0.0;
+        m_color.step[i] = 0.0;
 
         m_scale.target[i] = 0.0;
         m_rotation.target[i] = 0.0;
         m_translation.target[i] = 0.0;
-        _desiredColor[i] = 0.0;
+        m_color.target[i] = 0.0;
 
     }
-    _colorI[3] = 1.0;
-    _colorStep[3] = 0.0;
-    _desiredColor[3] = 0.0;
+    m_color.internal[3] = 1.0;
+    m_color.step[3] = 0.0;
+    m_color.target[3] = 0.0;
     m_brightness.value = 1.0;
     m_brightness.step = 0.0;
     m_brightness.target = 0.0;
@@ -154,24 +154,24 @@ int QGLImage::height() const
 void QGLImage::setAlpha(float percent, int msecs)
 {
     // stop running alpha animagtions (iff)
-    if (_colorStep[3] != 0.0) {
+    if (m_color.step[3] != 0.0) {
         --_activeAnimations;
-        _colorStep[3] = 0.0;
+        m_color.step[3] = 0.0;
     }
     if (msecs == 0) {
-        _colorI[3] = percent / 100.0;
+        m_color.internal[3] = percent / 100.0;
         if (_shaderProgram) {
             _parent->makeCurrent();
             glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-            glUniform1fARB(_sAlpha, _colorI[3]);
+            glUniform1fARB(_sAlpha, m_color.internal[3]);
         }
         if (_isShown)
             _parent->updateGL();
         return;
     }
-    _desiredColor[3] = percent / 100.0;
-    _colorStep[3] = (_desiredColor[3] - _colorI[3]) * _parent->fpsDelay() / msecs;
-    if (_colorStep[3] != 0.0) { // need to animate
+    m_color.target[3] = percent / 100.0;
+    m_color.step[3] = (m_color.target[3] - m_color.internal[3]) * _parent->fpsDelay() / msecs;
+    if (m_color.step[3] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -202,17 +202,17 @@ void QGLImage::setAlpha(float percent, int msecs)
 void QGLImageViewer::mergeCnB(QGLImage & img)
 {
     /** first step: figure out the ratio of each channel ranged [0,1/3] */
-    float sum = img._color[0] + img._color[1] + img._color[2];
+    float sum = img.m_color.value[0] + img.m_color.value[1] + img.m_color.value[2];
     if (sum > 0.0) {
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = (img._color[i] * img._color[i] / (3.0 * sum));
-    } else { /** handle division by 0: lim(_colorI[i] : _color[0,1,2] -> 0) = 0 */
+            img.m_color.internal[i] = (img.m_color.value[i] * img.m_color.value[i] / (3.0 * sum));
+    } else { /** handle division by 0: lim(m_color.internal[i] : m_color.value[0,1,2] -> 0) = 0 */
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = 0.0;
+            img.m_color.internal[i] = 0.0;
     }
 
-    float max = QMAX(QMAX(img._colorI[0], img._colorI[1]), img._colorI[2]);
-    float min = QMIN(QMIN(img._colorI[0], img._colorI[1]), img._colorI[2]);
+    float max = QMAX(QMAX(img.m_color.internal[0], img.m_color.internal[1]), img.m_color.internal[2]);
+    float min = QMIN(QMIN(img.m_color.internal[0], img.m_color.internal[1]), img.m_color.internal[2]);
 
     /** next figure out whether subtract, add or where between */
     if (min + img.m_brightness.value < 5.0 / 6.0)
@@ -222,8 +222,8 @@ void QGLImageViewer::mergeCnB(QGLImage & img)
         /** This means we want to subtract more than 0.5, what add_signed cannot handle */
         img._combineRGB = GL_SUBTRACT; // qWarning("subtract");
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = 1.0 / 4.5 - img._colorI[i] + (1.0 - img.m_brightness.value);
-//          == _colorI[i] = 1.0/3.0 - _colorI[i]*sum/_color[i] + (1.0 - m_brightness.value);
+            img.m_color.internal[i] = 1.0 / 4.5 - img.m_color.internal[i] + (1.0 - img.m_brightness.value);
+//          == m_color.internal[i] = 1.0/3.0 - m_color.internal[i]*sum/m_color.value[i] + (1.0 - m_brightness.value);
     } else if (max + img.m_brightness.value > 1.5)
 //    == (max + m_brightness.value - 1.0 > 0.5)
 //    == (m_brightness.value > 1.5 - max)
@@ -231,7 +231,7 @@ void QGLImageViewer::mergeCnB(QGLImage & img)
         /** This means we want to add more than 0.5, what add_signed cannot handle */
         img._combineRGB = GL_ADD; // qWarning("add");
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = img._colorI[i] + img.m_brightness.value - 1.0;
+            img.m_color.internal[i] = img.m_color.internal[i] + img.m_brightness.value - 1.0;
     } else {
         /** glueing ;) - NOTICE that we 'should' include the +1/12 shift
         (which is necessary to end up with no change for color == white / brightnes == 1)
@@ -241,8 +241,8 @@ void QGLImageViewer::mergeCnB(QGLImage & img)
         img._combineRGB = GL_ADD_SIGNED; // qWarning("add_signed");
         float mi = (max - 2.0 / 3.0 - min);
         for (int i = 0; i < 3; ++i)
-            img._colorI[i] = img._colorI[i] - (1.0 / mi * img.m_brightness.value - (1.5 - max) / mi) * 1.0 / 3.0 + img.m_brightness.value - 5.0 / 12.0;
-//          == _colorI[i] = _colorI[i] - (1.0/mi * m_brightness.value - (1.5-max)/mi) * 1.0/3.0 + m_brightness.value - 1.0 + 0.5 + 1.0/12.0;
+            img.m_color.internal[i] = img.m_color.internal[i] - (1.0 / mi * img.m_brightness.value - (1.5 - max) / mi) * 1.0 / 3.0 + img.m_brightness.value - 5.0 / 12.0;
+//          == m_color.internal[i] = m_color.internal[i] - (1.0/mi * m_brightness.value - (1.5-max)/mi) * 1.0/3.0 + m_brightness.value - 1.0 + 0.5 + 1.0/12.0;
     }
 }
 
@@ -284,7 +284,7 @@ void QGLImage::paint()
 //       glBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_SRC_COLOR);
 
     glUseProgramObjectARB(_shaderProgram);
-    glColor4fv(_colorI);
+    glColor4fv(m_color.internal);
 
     glCallList(m_blur.value > 0.0 ? m_blur.object : glObject());
 
@@ -353,22 +353,22 @@ void QGLImage::setBrightness(float percent, int msecs)
 void QGLImage::tint(const QColor & color, int msecs)
 {
     // stop running color animations (iff)
-    if (_colorStep[0] != 0.0 || _colorStep[1] != 0.0 || _colorStep[2] != 0.0) {
-        _colorStep[0] = 0.0; _colorStep[1] = 0.0; _colorStep[2] = 0.0;
+    if (m_color.step[0] != 0.0 || m_color.step[1] != 0.0 || m_color.step[2] != 0.0) {
+        m_color.step[0] = 0.0; m_color.step[1] = 0.0; m_color.step[2] = 0.0;
         --_activeAnimations;
     }
-    bool sameColor = _color[0] == (float)color.red() / 255.0 &&
-                     _color[1] == (float)color.green() / 255.0 &&
-                     _color[2] == (float)color.blue() / 255.0;
+    bool sameColor = m_color.value[0] == (float)color.red() / 255.0 &&
+                     m_color.value[1] == (float)color.green() / 255.0 &&
+                     m_color.value[2] == (float)color.blue() / 255.0;
     if (msecs == 0 || sameColor) {
-        _color[0] = (float)color.red() / 255.0;
-        _color[1] = (float)color.green() / 255.0;
-        _color[2] = (float)color.blue() / 255.0;
+        m_color.value[0] = (float)color.red() / 255.0;
+        m_color.value[1] = (float)color.green() / 255.0;
+        m_color.value[2] = (float)color.blue() / 255.0;
         // export shader variable
         if (_shaderProgram) {
             _parent->makeCurrent();
             glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-            glUniform3fARB(_sColor, _color[0], _color[1], _color[2]);
+            glUniform3fARB(_sColor, m_color.value[0], m_color.value[1], m_color.value[2]);
         }
         // done
         _parent->mergeCnB(*this);
@@ -376,15 +376,15 @@ void QGLImage::tint(const QColor & color, int msecs)
             _parent->updateGL();
         return;
     }
-    _desiredColor[0] = (float)color.red() / 255.0;
-    _desiredColor[1] = (float)color.green() / 255.0;
-    _desiredColor[2] = (float)color.blue() / 255.0;
+    m_color.target[0] = (float)color.red() / 255.0;
+    m_color.target[1] = (float)color.green() / 255.0;
+    m_color.target[2] = (float)color.blue() / 255.0;
 
-    _colorStep[0] = (_desiredColor[0] - _color[0]) * _parent->fpsDelay() / msecs;
-    _colorStep[1] = (_desiredColor[1] - _color[1]) * _parent->fpsDelay() / msecs;
-    _colorStep[2] = (_desiredColor[2] - _color[2]) * _parent->fpsDelay() / msecs;
+    m_color.step[0] = (m_color.target[0] - m_color.value[0]) * _parent->fpsDelay() / msecs;
+    m_color.step[1] = (m_color.target[1] - m_color.value[1]) * _parent->fpsDelay() / msecs;
+    m_color.step[2] = (m_color.target[2] - m_color.value[2]) * _parent->fpsDelay() / msecs;
 
-    if (_colorStep[0] != 0.0 || _colorStep[1] != 0.0 || _colorStep[2] != 0.0) { // need to animate
+    if (m_color.step[0] != 0.0 || m_color.step[1] != 0.0 || m_color.step[2] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -798,8 +798,8 @@ void QGLImage::addShader(GLhandleARB shader, bool linkProgram, bool update)
         _sBrightness = glGetUniformLocationARB(_shaderProgram, "brightness");
         _sInverted = glGetUniformLocationARB(_shaderProgram, "inverted");
         _sTime = glGetUniformLocationARB(_shaderProgram, "time");
-        glUniform3fARB(_sColor, _color[0], _color[1], _color[2]);
-        glUniform1fARB(_sAlpha, _colorI[3]);
+        glUniform3fARB(_sColor, m_color.value[0], m_color.value[1], m_color.value[2]);
+        glUniform1fARB(_sAlpha, m_color.internal[3]);
         glUniform1fARB(_sBrightness, m_brightness.value - 1.0);
         glUniform1fARB(_sInverted, _inverted ? 1.0 : 0.0);
         glUniform1fARB(_sTime, 0.0);
@@ -1017,8 +1017,8 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         handleAnimationsPrivate(it->m_translation, it->_activeAnimations);
         handleAnimationsPrivate(it->m_rotation, it->_activeAnimations);
         // alpha
-        if (it->_colorStep[3] != 0.0) {
-            float &aS = it->_colorStep[3], &a = it->_colorI[3], &dA = it->_desiredColor[3];
+        if (it->m_color.step[3] != 0.0) {
+            float &aS = it->m_color.step[3], &a = it->m_color.internal[3], &dA = it->m_color.target[3];
             a += aS;
             if ((aS > 0.0 && a >= dA) || (aS < 0.0 && a <= dA)) { // we're done with this
                 aS = 0.0;
@@ -1035,7 +1035,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         int colorsDone = 0;
         bool needColorMerge = false;
         for (int i = 0; i < 3; ++i) {
-            float &cS = it->_colorStep[i], &c = it->_color[i], &dC = it->_desiredColor[i];
+            float &cS = it->m_color.step[i], &c = it->m_color.value[i], &dC = it->m_color.target[i];
             if (cS == 0.0)
                 ++colorsDone;
             else {
@@ -1046,8 +1046,8 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         }
         if (needColorMerge && colorsDone > 2) {
             for (int i = 0; i < 3; ++i) {
-                it->_colorStep[i] = 0.0;
-                it->_color[i] = it->_desiredColor[i]; // make sure we have a match
+                it->m_color.step[i] = 0.0;
+                it->m_color.value[i] = it->m_color.target[i]; // make sure we have a match
             }
             --(it->_activeAnimations);
         }
@@ -1055,7 +1055,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
             if (it->_shaderProgram) {
                 makeCurrent();
                 glUseProgramObjectARB(it->_shaderProgram); // this seems to be necessary
-                glUniform3fARB(it->_sColor, it->_color[0], it->_color[1], it->_color[2]);
+                glUniform3fARB(it->_sColor, it->m_color.value[0], it->m_color.value[1], it->m_color.value[2]);
             }
             mergeCnB(*it);
         }

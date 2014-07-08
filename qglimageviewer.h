@@ -489,7 +489,7 @@ public:
     */
     inline float alpha() const
     {
-        return _colorI[3] * 100.0;
+        return m_color.internal[3] * 100.0;
     }
 
     /**
@@ -511,9 +511,9 @@ public:
     */
     inline void setInternalColor(const QColor color)
     {
-        _colorI[0] = ((float)color.red()) / 255.0;
-        _colorI[1] = ((float)color.green()) / 255.0;
-        _colorI[2] = ((float)color.blue()) / 255.0;
+        m_color.internal[0] = ((float)color.red()) / 255.0;
+        m_color.internal[1] = ((float)color.green()) / 255.0;
+        m_color.internal[2] = ((float)color.blue()) / 255.0;
     }
 
     /**
@@ -522,7 +522,7 @@ public:
     */
     inline QColor color() const
     {
-        return QColor((int)(_color[0] * 255), (int)(_color[1] * 255), (int)(_color[2] * 255));
+        return QColor((int)(m_color.value[0] * 255), (int)(m_color.value[1] * 255), (int)(m_color.value[2] * 255));
     }
 
     /**
@@ -842,10 +842,9 @@ private:
 
     Attribute m_scale, m_translation, m_rotation;
 
-    GLfloat _color[3];
-    GLfloat _colorI[4];
-    GLfloat _desiredColor[4];
-    GLfloat _colorStep[4];
+    struct {
+        GLfloat value[3], internal[4], target[4], step[4];
+    } m_color;
 
     struct {
         GLfloat value, target, step;
