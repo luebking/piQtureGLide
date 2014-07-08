@@ -844,7 +844,7 @@ int QGLImage::setShaderUniform(QString var, const int varSize, const float val1,
 {
     _parent->makeCurrent();
     glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-    int id = glGetUniformLocationARB(_shaderProgram, var.toAscii().data());
+    int id = glGetUniformLocationARB(_shaderProgram, var.toLatin1().data());
     int vs = CLAMP(varSize, 1, 4);
     switch (vs) {
     case 1: glUniform1fARB(id, val1); break;
@@ -2169,7 +2169,7 @@ GLhandleARB QGLImageViewer::loadShader(QString file, GLenum shaderType)
         QTextStream ts(&f);
         QString sourceCode = ts.readAll();
         f.close();
-        QByteArray ba = sourceCode.toAscii();
+        QByteArray ba = sourceCode.toLatin1();
         const char * sc = ba.data();
         glShaderSourceARB(shader, 1, &sc, 0L);
         glCompileShaderARB(shader);

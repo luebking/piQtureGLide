@@ -1,7 +1,7 @@
 HEADERS = qglimageviewer.h qgliv.h dirfilecombo.h
 SOURCES = qglimageviewer.cpp qgliv.cpp main.cpp dirfilecombo.cpp ui.cpp
 CONFIG += qt debug
-QT += opengl gui core
+QT += opengl gui core concurrent
 LIBS += -lGLU
 DEFINES += VERSION=0.9
 target.path += $$[QT_INSTALL_BINS]

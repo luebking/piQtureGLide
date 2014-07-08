@@ -35,7 +35,11 @@
 #include <QSettings>
 #include <QStringList>
 #include <QSysInfo>
+#if QT_VERSION < 0x050000
 #include <QtConcurrentRun>
+#else
+#include <QtConcurrent>
+#endif
 #include <QTextStream>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -176,6 +180,8 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
     view->grabGesture(Qt::SwipeGesture);
 
     if (view->providesShaders()) {
+#if QT_VERSION < 0x050000
+
 #define xstr(s) str(s)
 #define str(s) #s
         QString globalDir(xstr(DATADIR)"/piQtureGLide/");
@@ -211,6 +217,23 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
 #undef CHARS
         }
         shader_frag = path.isNull() ? 0 : view->loadShader(path, GL_FRAGMENT_SHADER_ARB);
+
+#else // QT_VERSION
+
+        char *env = getenv("QGLIV_SHADER_VERT");
+        QString path = env ? env : "shader.vert";
+        path = QStandardPaths::locate(QStandardPaths::DataLocation, path);
+        shader_vert = 0;
+        if (!path.isEmpty()) {
+            getNumPoly(path);
+            shader_vert = view->loadShader(path, GL_VERTEX_SHADER_ARB);
+        }
+
+        env = getenv("QGLIV_SHADER_FRAG");
+        path = env ? env : "shader.frag";
+        path = QStandardPaths::locate(QStandardPaths::DataLocation, path);
+        shader_frag = path.isEmpty() ? 0 : view->loadShader(path, GL_FRAGMENT_SHADER_ARB);
+#endif
     }
 
     QFont fnt = view->font(); fnt.setPointSize(20); view->setFont(fnt);
