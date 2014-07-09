@@ -760,6 +760,23 @@ void QGLImage::moveTo(float xPercent, float yPercent, float zPercent, bool updat
         _parent->updateGL();
 }
 
+void QGLImage::zoomTo(const QPoint &spot, float percent, bool update)
+{
+    _parent->setCursor(Qt::BlankCursor);
+    // scale
+    m_scale.value[X] *= percent / 100.0;
+    m_scale.value[Y] *= percent / 100.0;
+    if (m_scale.value[X] < 0.0) m_scale.value[X] = m_scale.value[Y];
+    if (m_scale.value[Y] < 0.0) m_scale.value[Y] = m_scale.value[X];
+    // TODO spot
+//     case X: v = -1.0 + percent / 50.0; break;
+//     case Y: v = ((float)_parent->height()) / _parent->width() - percent * _parent->height() / (50.0 * _parent->width()); break;
+//     m_translation.value[X] += (spot.x() - m_translation.value[X]) / 6.0;
+//     m_translation.value[Y] += (spot.y() - m_translation.value[Y]) / 6.0;
+    if (update)
+        _parent->updateGL();
+}
+
 void QGLImage::setClipRect(int x, int y, int w, int h, bool update)
 {
     _hasClipping = true;
@@ -2079,6 +2096,7 @@ void QGLImageViewer::moveTo(Axis a, float percent, int msecs)
         ensureTimerIsActive();
     }
 }
+
 void QGLImageViewer::moveTo(float xPercent, float yPercent, float zPercent, bool update)
 {
     // stop running animations
@@ -2099,6 +2117,29 @@ void QGLImageViewer::moveTo(float xPercent, float yPercent, float zPercent, bool
     m_translation.value[Z] = -3.0 - 47.0 * zPercent / 100.0;
     if (update)
         updateGL();
+}
+
+void QGLImageViewer::zoom(float percent, bool update)
+{
+    setCursor(Qt::BlankCursor);
+    // scale
+    float v = m_scale.value[X] * percent / 100.0;
+    if (v != 0.0)
+        m_scale.value[X] = v;
+    v = m_scale.value[Y] * percent / 100.0;
+    if (v != 0.0)
+        m_scale.value[Y] = v;
+    // and shift the image (i.e. zoom to cursor)
+    m_translation.value[X] += (_scaleTarget[X] - m_translation.value[X]) / 6.0;
+    m_translation.value[Y] += (_scaleTarget[Y] - m_translation.value[Y]) / 6.0;
+    if (update)
+        updateGL();
+}
+
+void QGLImageViewer::setScaleTarget(const QPoint &spot)
+{
+    _scaleTarget[X] = m_translation.value[X] - (2.0 * spot.x() / width() - 1.0) / (m_scale.value[X] * 3.0 / -m_translation.value[Z]);
+    _scaleTarget[Y] = m_translation.value[Y] + (2.0 * spot.y() - height()) / ((m_scale.value[Y] * 3.0 / -m_translation.value[Z]) * width());
 }
 
 void QGLImageViewer::hideMessage()

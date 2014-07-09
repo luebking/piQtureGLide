@@ -283,6 +283,8 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
 
     QSettings settings("piQtureGLide");
     iAmTouchy = settings.value("TouchMode", false).toBool();
+    iAmMultiTouchy = iAmTouchy;
+    iAmTouchy = false;
     editorCmd = settings.value("EditorCmd", "gimp-remote \"%f\"").toString();
     wallpaperCmd = settings.value("SetWallpaperCmd", "qdbus org.kde.be.shell /Desktop setWallpaper \"%f\" 0").toString();
     ui.autoSize->setChecked(settings.value("AutoSize", true).toBool());
@@ -711,6 +713,79 @@ QGLIV::imageLoaded()
 static QPoint drag_start;
 static bool is_rotation = false;
 
+bool QGLIV::pinch(const QPinchGesture *pg, bool newPinch)
+{
+    if (!pg)
+        return false;
+
+    static int usedAngle = 0;
+    if (newPinch)
+        usedAngle = 0;
+
+    float scale = 1.0;
+    float angle = 0.0;
+    if (pg->changeFlags() & QPinchGesture::ScaleFactorChanged) {
+        if (newPinch)
+            view->setScaleTarget(pg->centerPoint().toPoint());
+        scale = pg->scaleFactor();
+        if (scale < 0.95 || scale > 1.05)
+            scale = 1.0;
+        else if (scale > 0.99 && scale < 1.01)
+            scale = 1.0;
+    }
+    else if (pg->changeFlags() & QPinchGesture::CenterPointChanged) {
+        view->setScaleTarget(pg->centerPoint().toPoint());
+    }
+    if (pg->changeFlags() & QPinchGesture::RotationAngleChanged) {
+        angle = pg->rotationAngle();
+        if (qAbs(angle - pg->lastRotationAngle()) > 5.0)
+            scale = 1.0;
+        angle -= usedAngle;
+        if (angle < -33.0)
+            angle = -90.0;
+        else if (angle > 33.0)
+            angle = 90.0;
+        else
+            angle = 0.0;
+        usedAngle += angle;
+    }
+    bool ret = false;
+    if (scale != 1.0) {
+        view->zoom(100*scale);
+        ret = true;
+    }
+    if (angle != 0.0) {
+        view->rotate(QGLImageView::Z, angle, 250);
+        ret = true;
+    }
+
+    return ret;
+}
+
+bool QGLIV::pan(const QPanGesture *pg, bool newPan)
+{
+    if (!pg)
+        return false;
+    return false;
+}
+
+bool QGLIV::swipe(const QSwipeGesture *sg, bool newSwipe)
+{
+    if (!sg)
+        return false;
+    if (sg->horizontalDirection() == QSwipeGesture::Left)
+        changeImage(-1);
+    else if (sg->horizontalDirection() == QSwipeGesture::Right)
+        changeImage(1);
+    else
+        return false;
+    return true;
+}
+
+// view->grabGesture(Qt::TapGesture);
+//     view->grabGesture(Qt::TapAndHoldGesture);
+
+
 bool
 QGLIV::eventFilter(QObject *o, QEvent * e)
 {
@@ -718,73 +793,93 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
 //       return false;
 //    ( (QGLImageViewer* )o )->images().last().scaleTo( 100.0, 100.0, true, true );
 
-    if (!(features & Diashow) && e->type() == QEvent::Wheel) {
-        QWheelEvent *we = static_cast<QWheelEvent*>(e);
-        int d = we->delta();
-        if (we->modifiers() & Qt::ControlModifier) {
-            d > 0 ? zoomIn() : zoomOut();
-        } else
-            changeImage(-d);
-    }
-
-    else if (e->type() == QEvent::MouseButtonPress) {
-        QMouseEvent *me = static_cast<QMouseEvent*>(e);
-        if (me->button() == Qt::LeftButton) {
-            drag_start = me->pos();
-            const int tw = view->width() / 8, th = view->height() / 8, x = drag_start.x(), y = drag_start.y();
-            is_rotation = iAmTouchy &&
-                          ((x < tw && y < th) || (x > view->width() - tw && y < th) ||
-                           (x < tw && y > view->height() - th) || (x > view->width() - tw && y > view->height() - th));
-        } else if (me->button() == Qt::RightButton)
-            ui.rmbPopup->exec(QCursor::pos());
-    }
-
-    else if (e->type() == QEvent::MouseMove) {
-        QMouseEvent *me = static_cast<QMouseEvent*>(e);
-        if (is_rotation && !(me->modifiers() & Qt::ControlModifier)) {
-            QMouseEvent me2(QEvent::MouseMove, me->pos(), me->globalPos(), me->button(), me->buttons(), Qt::ControlModifier);
-            QCoreApplication::sendEvent(o, &me2);
+    if (iAmMultiTouchy) {
+        if (e->type() == QEvent::Gesture) {
+            static bool newPinch = true;
+            bool havePinch = false;
+            const QPinchGesture *pinchG = 0;
+            const QSwipeGesture *swipeG = 0;
+            foreach (const QGesture *g, static_cast<QGestureEvent*>(e)->activeGestures()) {
+                if (!pinchG)
+                    pinchG = qobject_cast<const QPinchGesture*>(g);
+                if (!swipeG)
+                    swipeG = qobject_cast<const QSwipeGesture*>(g);
+            }
+            if (pinchG)
+                static_cast<QGestureEvent*>(e)->setAccepted(pinchG);
+            if (swipeG) {
+                static_cast<QGestureEvent*>(e)->setAccepted(swipeG);
+                swipe(swipeG, true);
+            } else if (pinchG) {
+                havePinch |= pinch(pinchG, newPinch);
+            }
+            newPinch = !havePinch;
+        } else if (e->type() == QEvent::MouseMove || e->type() == QEvent::MouseButtonPress || e->type() == QEvent::MouseButtonRelease)
             return true;
-        } else
-            return false;
-    }
+    } else {
+        if (!(features & Diashow) && e->type() == QEvent::Wheel) {
+            QWheelEvent *we = static_cast<QWheelEvent*>(e);
+            int d = we->delta();
+            if (we->modifiers() & Qt::ControlModifier) {
+                d > 0 ? zoomIn() : zoomOut();
+            } else
+                changeImage(-d);
+        }
 
-    else if (e->type() == QEvent::MouseButtonRelease) {
-        QMouseEvent *me = static_cast<QMouseEvent*>(e);
-        if (iAmTouchy && !dont_dragswitch && me->button() == Qt::LeftButton) {
-            if (is_rotation) {
-                maxW(150);
+        else if (e->type() == QEvent::MouseButtonPress) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(e);
+            if (me->button() == Qt::LeftButton) {
+                drag_start = me->pos();
+                const int tw = view->width() / 8, th = view->height() / 8, x = drag_start.x(), y = drag_start.y();
+                is_rotation = iAmTouchy &&
+                            ((x < tw && y < th) || (x > view->width() - tw && y < th) ||
+                            (x < tw && y > view->height() - th) || (x > view->width() - tw && y > view->height() - th));
+            } else if (me->button() == Qt::RightButton)
+                ui.rmbPopup->exec(QCursor::pos());
+        }
+
+        else if (e->type() == QEvent::MouseMove) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(e);
+            if (is_rotation && !(me->modifiers() & Qt::ControlModifier)) {
+                QMouseEvent me2(QEvent::MouseMove, me->pos(), me->globalPos(), me->button(), me->buttons(), Qt::ControlModifier);
+                QCoreApplication::sendEvent(o, &me2);
+                return true;
+            } else
                 return false;
-            }
-            const int dx = drag_start.x() - me->pos().x();
-            const int dy = drag_start.y() - me->pos().y();
-            int d = 0;
-            if (qAbs(dx) < view->width() / 8 && qAbs(dy) > view->height() / 2) {
-                transitionEffect = VerticalSlide;
-                d = dy;
-            } else if (qAbs(dx) > view->width() / 2 && qAbs(dy) < view->height() / 8) {
-                transitionEffect = HorizontalSlide;
-                d = dx;
-            }
-            if (!changeImage(d))
-                maxW(qMax(qAbs(dx), qAbs(dy)) / 4);
-        } else if (me->button() == Qt::RightButton)
-            ui.rmbPopup->exec(QCursor::pos());
-    }
+        }
 
-    else if (e->type() == QEvent::MouseButtonDblClick) {
-        QMouseEvent *me = static_cast<QMouseEvent*>(e);
-        if (me->button() != Qt::LeftButton)
-            return false;
-        if (me->modifiers() & Qt::ControlModifier)
-            resetView();
-        else
-            maxW();
-    }
+        else if (e->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(e);
+            if (iAmTouchy && !dont_dragswitch && me->button() == Qt::LeftButton) {
+                if (is_rotation) {
+                    maxW(150);
+                    return false;
+                }
+                const int dx = drag_start.x() - me->pos().x();
+                const int dy = drag_start.y() - me->pos().y();
+                int d = 0;
+                if (qAbs(dx) < view->width() / 8 && qAbs(dy) > view->height() / 2) {
+                    transitionEffect = VerticalSlide;
+                    d = dy;
+                } else if (qAbs(dx) > view->width() / 2 && qAbs(dy) < view->height() / 8) {
+                    transitionEffect = HorizontalSlide;
+                    d = dx;
+                }
+                if (!changeImage(d))
+                    maxW(qMax(qAbs(dx), qAbs(dy)) / 4);
+            } else if (me->button() == Qt::RightButton)
+                ui.rmbPopup->exec(QCursor::pos());
+        }
 
-    else if (e->type() == QEvent::Gesture) {
-        foreach (const QGesture *g, static_cast<QGestureEvent*>(e)->activeGestures())
-            qDebug() << g->gestureType();
+        else if (e->type() == QEvent::MouseButtonDblClick) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(e);
+            if (me->button() != Qt::LeftButton)
+                return false;
+            if (me->modifiers() & Qt::ControlModifier)
+                resetView();
+            else
+                maxW();
+        }
     }
 
     return false;

@@ -213,6 +213,8 @@ public:
     void move(float xPercent, float yPercent, float zPercent, bool update = true);
     void moveTo(Axis a, float percent, int msecs = 0);
     void moveTo(float xPercent, float yPercent, float zPercent, bool update = true);
+    void zoom(float percent, bool update = true);
+    void setScaleTarget(const QPoint &spot);
 
     /**
     * Display a message(string)
@@ -693,6 +695,7 @@ public:
     void move(float xPercent, float yPercent, float zPercent, bool update = true);
     void moveTo(Axis a, float percent, int msecs = 0);
     void moveTo(float xPercent, float yPercent, float zPercent, bool update = true);
+    void zoomTo(const QPoint &spot, float percent, bool update = true);
 
     void setAlpha(float percent, int msecs = 0);
     void tint(const QColor & color, int msecs = 0);

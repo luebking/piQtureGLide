@@ -30,8 +30,11 @@ class QComboBox;
 class DirFileCombo;
 class QDial;
 class QMenu;
+class QPanGesture;
+class QPinchGesture;
 class QSlider;
 class QStringList;
+class QSwipeGesture;
 class QTimer;
 class QToolBar;
 class QToolBox;
@@ -116,7 +119,7 @@ private:
     int _effect, _lastDirection;
     bool _animationDone;
     QTimer *transitionFinisher;
-    bool iAmTouchy, dont_dragswitch;
+    bool iAmTouchy, iAmMultiTouchy, dont_dragswitch;
 
 private:
     void addToView(Image *image);
@@ -128,6 +131,10 @@ private:
     void unload(Image *image);
     void maxW(int ms); void resetView(int ms);
     void setupUI(const QString &startDir);
+
+    bool pinch(const QPinchGesture *pg, bool newPinch);
+    bool pan(const QPanGesture *pg, bool newPan);
+    bool swipe(const QSwipeGesture *sg, bool newSwipe);
 
 private slots:
     void clearFilter();
