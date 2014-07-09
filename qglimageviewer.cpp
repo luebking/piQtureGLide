@@ -1852,17 +1852,19 @@ void QGLImageViewer::ensureTimerIsActive()
 void QGLImageViewer::rotate(Axis a, float degrees, int msecs)
 {
     // stop running animations
+    float v = m_rotation.value[a];
     if (m_rotation.step[a] != 0.0) {
         --_activeAnimations;
         m_rotation.step[a] = 0.0;
+        v = m_rotation.target[a];
     }
     float deg = a == Z ? -degrees : degrees;
     if (msecs == 0) {
-        m_rotation.value[a] += deg;
+        m_rotation.value[a] = v + deg;
         updateGL();
         return;
     }
-    m_rotation.target[a] = m_rotation.value[a] + deg;
+    m_rotation.target[a] = v + deg;
     m_rotation.step[a] = deg * _fpsDelay / msecs;
     if (m_rotation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
@@ -1955,16 +1957,18 @@ void QGLImageViewer::scale(Axis a, float percent, int msecs)
     if (a == Z) //invalid
         return;
     // stop running animations
+    float v = m_scale.value[a];
     if (m_scale.step[a] != 0.0) {
         --_activeAnimations;
         m_scale.step[a] = 0.0;
+        v = m_scale.target[a];
     }
     if (msecs == 0) {
-        m_scale.value[a] *= percent / 100.0;
+        m_scale.value[a] = v * percent / 100.0;
         updateGL();
         return;
     }
-    m_scale.target[a] = m_scale.value[a] * percent / 100.0;
+    m_scale.target[a] = v * percent / 100.0;
     m_scale.step[a] = (m_scale.target[a] - m_scale.value[a]) * _fpsDelay / msecs;
     if (m_scale.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
@@ -2034,16 +2038,18 @@ void QGLImageViewer::move(Axis a, float percent, int msecs)
     case Z: v = -50.0 * percent / 100.0; break;
     }
     // stop running animations
+    float v2 = m_translation.value[a];
     if (m_translation.step[a] != 0.0) {
         --_activeAnimations;
         m_translation.step[a] = 0.0;
+        v2 = m_translation.target[a];
     }
     if (msecs == 0) {
-        m_translation.value[a] += v;
+        m_translation.value[a] = v2 + v;
         updateGL();
         return;
     }
-    m_translation.target[a] = m_translation.value[a] + v;
+    m_translation.target[a] = v2 + v;
     m_translation.step[a] = v * _fpsDelay / msecs;
     if (m_translation.step[a] != 0.0) { // need to animate
         ++_activeAnimations;
