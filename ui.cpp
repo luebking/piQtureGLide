@@ -124,6 +124,10 @@ void QGLIV::setupUI(const QString &startDir)
     ui.fileCombo->setEditText(QString());
     ui.toolbar->addWidget(ui.fileCombo);
 
+    ui.toolbar->addWidget(btn = new QToolButton(ui.toolbar));
+    btn->setText("Set wallpaper");
+    connect(btn, SIGNAL(clicked()), this, SLOT(setAsWallpaper()));
+
     connect(ui.dirCombo, SIGNAL(currentIndexChanged(const QString&)), ui.fileCombo, SLOT(setDirectory(const QString&)));
     connect(ui.dirCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(setDirectory(const QString&)));
 
@@ -313,7 +317,7 @@ void QGLIV::toggleUI()
     if (ui.tools->isVisibleTo(this)) {
         ui.level = 1;
         ui.tools->hide();
-    } else if (ui.viewBar->isVisibleTo(this)) {
+    } else if (!iAmTouchy && ui.viewBar->isVisibleTo(this)) {
         ui.level = 2;
         ui.viewBar->hide();
     } else if (ui.toolbar->isVisibleTo(this)) {
