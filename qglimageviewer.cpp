@@ -25,8 +25,9 @@
 
 // #include <QtGui>
 #include <QCursor>
-#include <QImage>
+#include <QElapsedTimer>
 #include <QFile>
+#include <QImage>
 #include <QPixmap>
 #include <QMap>
 #include <QTimer>
@@ -1339,8 +1340,12 @@ void QGLImageViewer::mouseMoveEvent(QMouseEvent * e)
     }
 
     setCursor(Qt::BlankCursor);
-    m_translation.value[X] += 2.0 * (e->pos().x() - _lastPos.x()) / (m_scale.value[X] * 3.0 / -m_translation.value[Z] * width());
-    m_translation.value[Y] -= 2.0 * (e->pos().y() - _lastPos.y()) / (m_scale.value[Y] * 3.0 / -m_translation.value[Z] * width());
+    const int dx = e->pos().x() - _lastPos.x();
+    const int dy = e->pos().y() - _lastPos.y();
+    if (qAbs(dx) < width()/32 && qAbs(dy) < height()/10) { // no weird jumps, please
+        m_translation.value[X] += 2.0 * dx / (m_scale.value[X] * 3.0 / -m_translation.value[Z] * width());
+        m_translation.value[Y] -= 2.0 * dy / (m_scale.value[Y] * 3.0 / -m_translation.value[Z] * width());
+    }
     _lastPos = e->pos();
     updateGL();
 }
@@ -2204,7 +2209,14 @@ void QGLImageViewer::updateGL()
 {
     if (_timer)
         return;
-    QGLWidget::updateGL();
+    static QElapsedTimer t;
+    const int elapsed = t.elapsed();
+    if (elapsed < fpsDelay()) {
+        _timer = startTimer(fpsDelay() - elapsed);
+    } else {
+        QGLWidget::updateGL();
+        t.start();
+    }
 }
 
 GLhandleARB QGLImageViewer::loadShader(QString file, GLenum shaderType)
