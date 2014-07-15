@@ -1009,15 +1009,15 @@ QGLIV::changeImage(int direction)
         }
     case HorizontalSlide:
         if (axis != QGLImageView::Z) {
-            autoSize() ? maxW(520) : resetView(520);
+            autoSize() ? maxW(200) : resetView(200);
         }
         if (iAmTouchy)
-            sign = -3 * sign;
+            sign = -sign;
+        current->image->hide(false);
         current->image->moveTo(axis, -100.0 * sign);
-        current->image->show(false);
-        _oldImage->moveTo(axis, (250.0 * sign)*_oldImage->scaleFactor(axis), 320);
-        current->image->moveTo(axis, 50.0, 520);
-        delay = 540;
+        _oldImage->moveTo(axis, (150.0 * sign)*_oldImage->scaleFactor(axis), 400);
+        _oldImage->setAlpha(0.0, 400);
+        delay = 220;
     }
 
     _effect *= sign;
@@ -1070,6 +1070,9 @@ void QGLIV::finishImageChange()
         if (axis == QGLImageView::X) axis = QGLImageView::Y;
     case HorizontalSlide:
         _oldImage->moveTo(axis, 50.0 * _oldImage->scaleFactor(axis));
+        _oldImage->setAlpha(100.0);
+        current->image->show(false);
+        current->image->moveTo(axis, 50.0, 520);
     }
 
     if (showMessage())
