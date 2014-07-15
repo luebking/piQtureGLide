@@ -870,14 +870,18 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
             const int dx = drag_start.x() - me->pos().x();
             const int dy = drag_start.y() - me->pos().y();
             int d = 0;
-            if (qAbs(dx) < view->width() / 8 && qAbs(dy) > view->height() / 4) {
+            int xInch = qMax(16, qMin(width()/10, physicalDpiX()));
+            const int yInch = qMax(16, qMin(height()/10, physicalDpiY()));
+            if (qAbs(dx) < xInch && qAbs(dy) > 3*yInch/2) {
                 transitionEffect = VerticalSlide;
                 d = dy;
-            } else if (qAbs(dx) > view->width() / 4 && qAbs(dy) < view->height() / 8) {
+                xInch = yInch;
+            } else if (qAbs(dx) > 3*xInch/2 && qAbs(dy) < yInch) {
                 transitionEffect = HorizontalSlide;
                 d = dx;
             }
-            if (d && qAbs(100*d/swipeTimer.elapsed()) < 200)
+            const int t = swipeTimer.elapsed();
+            if (d && (!t || qAbs(1000*d/(xInch*t)) < 14)) // >= 14"/s
                 d = 0;
             if ((d || !iAmMultiTouchy) && !changeImage(d))
                 maxW(qMax(qAbs(dx), qAbs(dy)) / 4);
