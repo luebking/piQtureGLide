@@ -1107,6 +1107,7 @@ void QGLIV::saveSettings()
     settings.setValue("AutoSize", ui.autoSize->isChecked());
     settings.setValue("Transition", ui.transitions->currentIndex());
     settings.setValue("UILevel", ui.level);
+    settings.sync();
 }
 
 void
