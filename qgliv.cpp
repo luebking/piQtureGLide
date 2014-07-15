@@ -389,6 +389,7 @@ void QGLIV::setDiaShow(bool active)
 QStringList
 loadDir(const QDir &dir)
 {
+    QThread::currentThread()->setPriority(QThread::LowestPriority);
     QString basePath = dir.absolutePath() + '/';
     QStringList files = dir.entryList(QDir::Files | QDir::Readable, QDir::Name);
     QStringList files2;
@@ -549,6 +550,7 @@ QGLIV::unload(Image *image)
 void
 loadImage(void *ptr, Image *image)
 {
+    QThread::currentThread()->setPriority(QThread::LowestPriority);
     QGLIV *qgliv = static_cast<QGLIV*>(ptr);
     const bool bwd = (image == qgliv->prev);
     bool wantCycle = qgliv->cycle();
