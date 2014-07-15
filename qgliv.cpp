@@ -294,6 +294,12 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
     setAutosize(ui.autoSize->isChecked());
     ui.transitions->setCurrentIndex(settings.value("Transition", 0).toUInt());
     int uilevel = settings.value("UILevel", 0).toUInt();
+    if (iAmTouchy && uilevel == 2) // forbidden
+        uilevel = 1;
+    if (uilevel < 0)
+        uilevel = 0;
+    if (uilevel > 3)
+        uilevel = 3;
     for (int i = 0; i < uilevel; ++i)
         toggleUI();
     connect(qApp, SIGNAL(aboutToQuit()), SLOT(saveSettings()));
