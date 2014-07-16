@@ -277,9 +277,13 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
     vl->addWidget((QWidget*)ui.viewBar);
 
     QSettings settings("piQtureGLide");
-    iAmTouchy = settings.value("TouchMode", false).toBool();
-    iAmMultiTouchy = iAmTouchy;
-    if (iAmMultiTouchy) {
+    m_touchMode = settings.value("TouchMode", 0).toInt();
+    if (m_touchMode) {
+        QFont fnt = QApplication::font();
+        fnt.setPointSize(2*fnt.pointSize());
+        QApplication::setFont(fnt);
+    }
+    if (m_touchMode > 1) {
         view->setAttribute(Qt::WA_AcceptTouchEvents);
         view->setAttribute(Qt::WA_TouchPadAcceptSingleTouchEvents);
 //         view->grabGesture(Qt::TapGesture);
@@ -289,12 +293,12 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
         view->grabGesture(Qt::SwipeGesture);
     }
     editorCmd = settings.value("EditorCmd", "gimp-remote \"%f\"").toString();
-    wallpaperCmd = settings.value("SetWallpaperCmd", "qdbus org.kde.be.shell /Desktop setWallpaper \"%f\" 0").toString();
+    wallpaperCmd = settings.value("SetWallpaperCmd", "qdbus org.kde.be.shell /Desktop setWallpaper \"%f\"").toString();
     ui.autoSize->setChecked(settings.value("AutoSize", true).toBool());
     setAutosize(ui.autoSize->isChecked());
     ui.transitions->setCurrentIndex(settings.value("Transition", 0).toUInt());
     int uilevel = settings.value("UILevel", 0).toUInt();
-    if (iAmTouchy && uilevel == 2) // forbidden
+    if (m_touchMode && uilevel == 2) // forbidden
         uilevel = 1;
     if (uilevel < 0)
         uilevel = 0;
@@ -808,7 +812,7 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
     static QPoint drag_start;
     static bool is_rotation = false;
     static QElapsedTimer swipeTimer;
-    if (iAmMultiTouchy) {
+    if (m_touchMode > 1) {
         if (e->type() == QEvent::Gesture) {
             static bool newPinch = true;
             bool havePinch = false;
@@ -849,7 +853,7 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
         if (me->button() == Qt::LeftButton) {
             drag_start = me->pos();
             swipeTimer.start();
-            if (iAmTouchy && !iAmMultiTouchy) {
+            if (m_touchMode == 1) {
                 const int tw = view->width() / 8, th = view->height() / 8, x = drag_start.x(), y = drag_start.y();
                 is_rotation = ((x < tw && y < th) || (x > view->width() - tw && y < th) ||
                               (x < tw && y > view->height() - th) || (x > view->width() - tw && y > view->height() - th));
@@ -870,7 +874,7 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
 
     else if (e->type() == QEvent::MouseButtonRelease) {
         QMouseEvent *me = static_cast<QMouseEvent*>(e);
-        if (iAmTouchy && !dont_dragswitch && me->button() == Qt::LeftButton) {
+        if (m_touchMode && !dont_dragswitch && me->button() == Qt::LeftButton) {
             if (is_rotation) {
                 maxW(150);
                 return false;
@@ -891,7 +895,7 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
             const int t = swipeTimer.elapsed();
             if (d && (!t || qAbs(1000*d/(xInch*t)) < 14)) // >= 14"/s
                 d = 0;
-            if ((d || !iAmMultiTouchy) && !changeImage(d))
+            if ((d || m_touchMode < 2) && !changeImage(d))
                 maxW(qMax(qAbs(dx), qAbs(dy)) / 4);
         } else if (me->button() == Qt::RightButton)
             ui.rmbPopup->exec(QCursor::pos());
@@ -1011,7 +1015,7 @@ QGLIV::changeImage(int direction)
         if (axis != QGLImageView::Z) {
             autoSize() ? maxW(200) : resetView(200);
         }
-        if (iAmTouchy)
+        if (m_touchMode)
             sign = -sign;
         current->image->hide(false);
         current->image->moveTo(axis, -100.0 * sign);

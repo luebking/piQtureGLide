@@ -119,7 +119,8 @@ private:
     int _effect, _lastDirection;
     bool _animationDone;
     QTimer *transitionFinisher;
-    bool iAmTouchy, iAmMultiTouchy, dont_dragswitch;
+    int m_touchMode;
+    bool dont_dragswitch;
 
 private:
     void addToView(Image *image);

@@ -113,6 +113,7 @@ void QGLIV::setupUI(const QString &startDir)
     ui.toolbar->addWidget(new QLabel("Folder:", ui.toolbar));
 
     ui.dirCombo = new DirFileCombo(ui.toolbar, QDir::Dirs, startDir);
+    ui.dirCombo->setMaximumWidth(200);
     ui.toolbar->addWidget(ui.dirCombo);
 
     ui.toolbar->addWidget(spacerWidget(Qt::Horizontal, ui.toolbar));
@@ -121,6 +122,7 @@ void QGLIV::setupUI(const QString &startDir)
 
     ui.fileCombo = new DirFileCombo(ui.toolbar, QDir::Files, "none");
     ui.fileCombo->setEntries(files);
+    ui.fileCombo->setMaximumWidth(200);
     ui.fileCombo->setEditText(QString());
     ui.toolbar->addWidget(ui.fileCombo);
 
@@ -317,7 +319,7 @@ void QGLIV::toggleUI()
     if (ui.tools->isVisibleTo(this)) {
         ui.level = 1;
         ui.tools->hide();
-    } else if (!iAmTouchy && ui.viewBar->isVisibleTo(this)) {
+    } else if (!m_touchMode && ui.viewBar->isVisibleTo(this)) {
         ui.level = 2;
         ui.viewBar->hide();
     } else if (ui.toolbar->isVisibleTo(this)) {
