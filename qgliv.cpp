@@ -292,7 +292,7 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
         view->grabGesture(Qt::PinchGesture);
         view->grabGesture(Qt::SwipeGesture);
     }
-    editorCmd = settings.value("EditorCmd", "gimp-remote \"%f\"").toString();
+    editorCmd = settings.value("EditorCmd", "gimp \"%f\"").toString();
     wallpaperCmd = settings.value("SetWallpaperCmd", "qdbus org.kde.be.shell /Desktop setWallpaper \"%f\"").toString();
     ui.autoSize->setChecked(settings.value("AutoSize", true).toBool());
     setAutosize(ui.autoSize->isChecked());
