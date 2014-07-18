@@ -48,7 +48,7 @@ protected:
 };
 
 #define ADD_ACTION( _KEY_, _SLOT_, _TIP_ )\
-    action = new QAction( this ); addAction( action ); action->setShortcut( Qt::Key_##_KEY_ );\
+    action = new QAction( this ); addAction( action ); action->setShortcuts(QList<QKeySequence>() << Qt::Key_##_KEY_ );\
     action->setToolTip( _TIP_ );\
     view->addAction( action );\
     connect ( action, SIGNAL( triggered(bool) ), this, SLOT( _SLOT_ ) )
@@ -292,7 +292,7 @@ void QGLIV::setupUI(const QString &startDir)
     action->setCheckable(true);
     action->setToolTip(tooltip("Maximize", QStringList() << "[*]"  << "Doubleclick"));
 
-    ADD_ACTION(Asterisk, maxW(), tooltip("Maximize", QStringList() << "[*]"  << "Doubleclick"));
+    ADD_ACTION(Asterisk << Qt::KeypadModifier + Qt::Key_Asterisk, maxW(), tooltip("Maximize", QStringList() << "[*]"  << "Doubleclick"));
 
     ui.zoomTimer = new QTimer(this);
     ui.zoomSlider = new QSlider(Qt::Horizontal, ui.viewBar);
@@ -303,11 +303,11 @@ void QGLIV::setupUI(const QString &startDir)
     connect(ui.zoomSlider, SIGNAL(sliderReleased()), this, SLOT(resetZoomSlider()));
     connect(ui.zoomSlider, SIGNAL(sliderMoved(int)), this, SLOT(zoom(int)));
 
-    ADD_ACTION(Plus, zoomIn(), tooltip("Zoom in", QStringList("[+]")));
-    ADD_ACTION(Minus, zoomOut(), tooltip("Zoom in", QStringList("[-]")));
+    ADD_ACTION(Plus << Qt::KeypadModifier + Qt::Key_Plus, zoomIn(), tooltip("Zoom in", QStringList("[+]")));
+    ADD_ACTION(Minus << Qt::KeypadModifier + Qt::Key_Minus, zoomOut(), tooltip("Zoom in", QStringList("[-]")));
 
     action = ui.viewBar->addAction("100%", this, SLOT(resetView()));
-    action->setShortcut(Qt::Key_Slash);
+    action->setShortcuts(QList<QKeySequence>() << Qt::Key_Slash << Qt::KeypadModifier + Qt::Key_Slash);
     action->setToolTip(tooltip("Reset view", QStringList() << "[/]"  << "[Ctrl] + Doubleclick"));
     view->addAction(action);
 
