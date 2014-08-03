@@ -352,7 +352,7 @@ QGLIV::init()
         } else
             autoSize() ? maxW() : resetView();
         if (showMessage())
-            view->message(20, 20, currentImageInfo(), 5000);
+            view->message(20, 20, currentImageInfo(), 2500);
     }
 
     // ...and cache in case
@@ -1077,7 +1077,7 @@ void QGLIV::finishImageChange()
     }
 
     if (showMessage())
-        view->message(20, 20, currentImageInfo(), 5000);
+        view->message(20, 20, currentImageInfo(), 2500);
 
     setWindowTitle(files.at(current->index));
 
@@ -1193,6 +1193,8 @@ void QGLIV::toggleMessage()
     if (features & ShowMessage) {
         features &= ~ShowMessage;
         view->hideMessage();
-    } else
+    } else {
         features |= ShowMessage;
+        view->message(20, 20, currentImageInfo(), 2500);
+    }
 }
