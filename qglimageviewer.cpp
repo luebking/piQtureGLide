@@ -118,9 +118,9 @@ QGLImage::QGLImage(QGLImageViewer *parent, const uint id, const GLuint object,
         m_color.target[i] = 0.0;
 
     }
-    m_color.internal[3] = 1.0;
-    m_color.step[3] = 0.0;
-    m_color.target[3] = 0.0;
+    m_color.internal[Alpha] = 1.0;
+    m_color.step[Alpha] = 0.0;
+    m_color.target[Alpha] = 0.0;
     m_brightness.value = 1.0;
     m_brightness.step = 0.0;
     m_brightness.target = 0.0;
@@ -155,24 +155,24 @@ int QGLImage::height() const
 void QGLImage::setAlpha(float percent, int msecs)
 {
     // stop running alpha animagtions (iff)
-    if (m_color.step[3] != 0.0) {
+    if (m_color.step[Alpha] != 0.0) {
         --_activeAnimations;
-        m_color.step[3] = 0.0;
+        m_color.step[Alpha] = 0.0;
     }
     if (msecs == 0) {
-        m_color.internal[3] = percent / 100.0;
+        m_color.internal[Alpha] = percent / 100.0;
         if (_shaderProgram) {
             _parent->makeCurrent();
             glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-            glUniform1fARB(_sAlpha, m_color.internal[3]);
+            glUniform1fARB(_sAlpha, m_color.internal[Alpha]);
         }
         if (_isShown)
             _parent->updateGL();
         return;
     }
-    m_color.target[3] = percent / 100.0;
-    m_color.step[3] = (m_color.target[3] - m_color.internal[3]) * _parent->fpsDelay() / msecs;
-    if (m_color.step[3] != 0.0) { // need to animate
+    m_color.target[Alpha] = percent / 100.0;
+    m_color.step[Alpha] = (m_color.target[Alpha] - m_color.internal[Alpha]) * _parent->fpsDelay() / msecs;
+    if (m_color.step[Alpha] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -203,7 +203,7 @@ void QGLImage::setAlpha(float percent, int msecs)
 void QGLImageViewer::mergeCnB(QGLImage & img)
 {
     /** first step: figure out the ratio of each channel ranged [0,1/3] */
-    float sum = img.m_color.value[0] + img.m_color.value[1] + img.m_color.value[2];
+    float sum = img.m_color.value[Red] + img.m_color.value[Green] + img.m_color.value[Blue];
     if (sum > 0.0) {
         for (int i = 0; i < 3; ++i)
             img.m_color.internal[i] = (img.m_color.value[i] * img.m_color.value[i] / (3.0 * sum));
@@ -212,8 +212,8 @@ void QGLImageViewer::mergeCnB(QGLImage & img)
             img.m_color.internal[i] = 0.0;
     }
 
-    float max = QMAX(QMAX(img.m_color.internal[0], img.m_color.internal[1]), img.m_color.internal[2]);
-    float min = QMIN(QMIN(img.m_color.internal[0], img.m_color.internal[1]), img.m_color.internal[2]);
+    float max = QMAX(QMAX(img.m_color.internal[Red], img.m_color.internal[Green]), img.m_color.internal[Blue]);
+    float min = QMIN(QMIN(img.m_color.internal[Red], img.m_color.internal[Green]), img.m_color.internal[Blue]);
 
     /** next figure out whether subtract, add or where between */
     if (min + img.m_brightness.value < 5.0 / 6.0)
@@ -354,22 +354,22 @@ void QGLImage::setBrightness(float percent, int msecs)
 void QGLImage::tint(const QColor & color, int msecs)
 {
     // stop running color animations (iff)
-    if (m_color.step[0] != 0.0 || m_color.step[1] != 0.0 || m_color.step[2] != 0.0) {
-        m_color.step[0] = 0.0; m_color.step[1] = 0.0; m_color.step[2] = 0.0;
+    if (m_color.step[Red] != 0.0 || m_color.step[Green] != 0.0 || m_color.step[Blue] != 0.0) {
+        m_color.step[Red] = 0.0; m_color.step[Green] = 0.0; m_color.step[Blue] = 0.0;
         --_activeAnimations;
     }
-    bool sameColor = m_color.value[0] == (float)color.red() / 255.0 &&
-                     m_color.value[1] == (float)color.green() / 255.0 &&
-                     m_color.value[2] == (float)color.blue() / 255.0;
+    bool sameColor = m_color.value[Red]   == (float)color.red() / 255.0 &&
+                     m_color.value[Green] == (float)color.green() / 255.0 &&
+                     m_color.value[Blue]  == (float)color.blue() / 255.0;
     if (msecs == 0 || sameColor) {
-        m_color.value[0] = (float)color.red() / 255.0;
-        m_color.value[1] = (float)color.green() / 255.0;
-        m_color.value[2] = (float)color.blue() / 255.0;
+        m_color.value[Red]   = (float)color.red() / 255.0;
+        m_color.value[Green] = (float)color.green() / 255.0;
+        m_color.value[Blue]  = (float)color.blue() / 255.0;
         // export shader variable
         if (_shaderProgram) {
             _parent->makeCurrent();
             glUseProgramObjectARB(_shaderProgram); // this seems to be necessary
-            glUniform3fARB(_sColor, m_color.value[0], m_color.value[1], m_color.value[2]);
+            glUniform3fARB(_sColor, m_color.value[Red], m_color.value[Green], m_color.value[Blue]);
         }
         // done
         _parent->mergeCnB(*this);
@@ -377,15 +377,15 @@ void QGLImage::tint(const QColor & color, int msecs)
             _parent->updateGL();
         return;
     }
-    m_color.target[0] = (float)color.red() / 255.0;
-    m_color.target[1] = (float)color.green() / 255.0;
-    m_color.target[2] = (float)color.blue() / 255.0;
+    m_color.target[Red]   = (float)color.red() / 255.0;
+    m_color.target[Green] = (float)color.green() / 255.0;
+    m_color.target[Blue]  = (float)color.blue() / 255.0;
 
-    m_color.step[0] = (m_color.target[0] - m_color.value[0]) * _parent->fpsDelay() / msecs;
-    m_color.step[1] = (m_color.target[1] - m_color.value[1]) * _parent->fpsDelay() / msecs;
-    m_color.step[2] = (m_color.target[2] - m_color.value[2]) * _parent->fpsDelay() / msecs;
+    m_color.step[Red] = (m_color.target[Red] - m_color.value[Red]) * _parent->fpsDelay() / msecs;
+    m_color.step[Green] = (m_color.target[Green] - m_color.value[Green]) * _parent->fpsDelay() / msecs;
+    m_color.step[Blue] = (m_color.target[Blue] - m_color.value[Blue]) * _parent->fpsDelay() / msecs;
 
-    if (m_color.step[0] != 0.0 || m_color.step[1] != 0.0 || m_color.step[2] != 0.0) { // need to animate
+    if (m_color.step[Red] != 0.0 || m_color.step[Green] != 0.0 || m_color.step[Blue] != 0.0) { // need to animate
         ++_activeAnimations;
         _parent->ensureTimerIsActive();
     }
@@ -816,8 +816,8 @@ void QGLImage::addShader(GLhandleARB shader, bool linkProgram, bool update)
         _sBrightness = glGetUniformLocationARB(_shaderProgram, "brightness");
         _sInverted = glGetUniformLocationARB(_shaderProgram, "inverted");
         _sTime = glGetUniformLocationARB(_shaderProgram, "time");
-        glUniform3fARB(_sColor, m_color.value[0], m_color.value[1], m_color.value[2]);
-        glUniform1fARB(_sAlpha, m_color.internal[3]);
+        glUniform3fARB(_sColor, m_color.value[Red], m_color.value[Green], m_color.value[Blue]);
+        glUniform1fARB(_sAlpha, m_color.internal[Alpha]);
         glUniform1fARB(_sBrightness, m_brightness.value - 1.0);
         glUniform1fARB(_sInverted, _inverted ? 1.0 : 0.0);
         glUniform1fARB(_sTime, 0.0);
@@ -904,11 +904,11 @@ QGLImageViewer::QGLImageViewer(QWidget* parent, const char* name, float fps, boo
         m_rotation.target[i] = 0.0;
         m_translation.target[i] = 0.0;
 
-        _canvasColor[i] = 0.0;
+        m_canvasColor[i] = 0.0;
     }
     m_translation.value[Z] = -3.0;
-    _messageTimeOut = 0;
-    _messageColor[3] = 0.0;
+    m_messageTimeOut = 0;
+    m_messageColor[Alpha] = 0.0;
 
     makeCurrent();
     QString *exStr = new QString((char*)glGetString(GL_EXTENSIONS));
@@ -1016,13 +1016,13 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         handleAnimationsPrivate(m_translation, _activeAnimations);
         handleAnimationsPrivate(m_rotation, _activeAnimations);
         // message timer
-        if (_messageTimeOut > 0) {
-            --_messageTimeOut;
-            _messageColor[3] += (float)_fpsDelay / 300.0;
-            _messageColor[3] = QMIN(_messageColor[3], (float)_messageTimeOut * _fpsDelay / 300.0);
-            _messageColor[3] = CLAMP(_messageColor[3], 0.0, 1.0);
-            perhapsJustPendingMessage = _messageColor[3] == 1.0;
-            if (_messageTimeOut == 0)
+        if (m_messageTimeOut > 0) {
+            --m_messageTimeOut;
+            m_messageColor[Alpha] += (float)_fpsDelay / 300.0;
+            m_messageColor[Alpha] = QMIN(m_messageColor[Alpha], (float)m_messageTimeOut * _fpsDelay / 300.0);
+            m_messageColor[Alpha] = CLAMP(m_messageColor[Alpha], 0.0, 1.0);
+            perhapsJustPendingMessage = m_messageColor[Alpha] == 1.0;
+            if (m_messageTimeOut == 0)
                 --_activeAnimations;
         }
         allAnims += _activeAnimations;
@@ -1038,8 +1038,8 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         handleAnimationsPrivate(it->m_translation, it->_activeAnimations);
         handleAnimationsPrivate(it->m_rotation, it->_activeAnimations);
         // alpha
-        if (it->m_color.step[3] != 0.0) {
-            float &aS = it->m_color.step[3], &a = it->m_color.internal[3], &dA = it->m_color.target[3];
+        if (it->m_color.step[Alpha] != 0.0) {
+            float &aS = it->m_color.step[Alpha], &a = it->m_color.internal[Alpha], &dA = it->m_color.target[Alpha];
             a += aS;
             if ((aS > 0.0 && a >= dA) || (aS < 0.0 && a <= dA)) { // we're done with this
                 aS = 0.0;
@@ -1076,7 +1076,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
             if (it->_shaderProgram) {
                 makeCurrent();
                 glUseProgramObjectARB(it->_shaderProgram); // this seems to be necessary
-                glUniform3fARB(it->_sColor, it->m_color.value[0], it->m_color.value[1], it->m_color.value[2]);
+                glUniform3fARB(it->_sColor, it->m_color.value[Red], it->m_color.value[Green], it->m_color.value[Blue]);
             }
             mergeCnB(*it);
         }
@@ -1137,7 +1137,7 @@ void QGLImageViewer::paintGL()
     QGLImageList::iterator it;
     for (it = _images.begin(); it != _images.end(); ++it)
         (*it).paint();
-    if (_messageTimeOut != 0) {
+    if (m_messageTimeOut != 0) {
         // TODO: make this instance and only update on fontchanges
         int fontHeight = QFontInfo(font()).pixelSize();
         glDisable(GL_TEXTURE_2D);
@@ -1153,8 +1153,8 @@ void QGLImageViewer::paintGL()
         glPushMatrix();
         glLoadIdentity();
 
-        glColor4f(1.0 - _messageColor[0], 1.0 - _messageColor[1], 1.0 - _messageColor[2], CLAMP(_messageColor[3], 0.0, 0.6));
-        glRecti(0, _messagePos.y() - fontHeight, (int)width(), _messagePos.y() + (int)((_message.count() - 1)*fontHeight * 1.5) + 15);
+        glColor4f(1.0 - m_messageColor[Red], 1.0 - m_messageColor[Green], 1.0 - m_messageColor[Blue], CLAMP(m_messageColor[Alpha], 0.0, 0.6));
+        glRecti(0, m_messagePos.y() - fontHeight, (int)width(), m_messagePos.y() + (int)((m_message.count() - 1)*fontHeight * 1.5) + 15);
 #if 0
         glLineWidth(5.0);
 //       glLineStipple(1, 0x1C47);
@@ -1166,7 +1166,7 @@ void QGLImageViewer::paintGL()
         glVertex2i((int)width() - 10, 10);
         glEnd();
 #endif
-//       glRecti(0, _messagePos.y()-2, width(), _messagePos.y()+2);
+//       glRecti(0, m_messagePos.y()-2, width(), m_messagePos.y()+2);
 
         // restore the matrix stacks and GL state
         glPopMatrix();
@@ -1174,10 +1174,10 @@ void QGLImageViewer::paintGL()
         glPopMatrix();
         glPopAttrib();
 
-        glColor4fv(_messageColor);
+        glColor4fv(m_messageColor);
         float i = 0.0;
-        for (QStringList::Iterator it = _message.begin(); it != _message.end(); ++it) {
-            renderText(_messagePos.x(), (int)(_messagePos.y() + i * fontHeight), *it, font());
+        for (QStringList::Iterator it = m_message.begin(); it != m_message.end(); ++it) {
+            renderText(m_messagePos.x(), (int)(m_messagePos.y() + i * fontHeight), *it, font());
             i += 1.5;
         }
         glEnable(GL_DEPTH_TEST);
@@ -1192,10 +1192,10 @@ void QGLImageViewer::paintGL()
 void QGLImageViewer::setCanvas(const QColor & color, bool update)
 {
     makeCurrent();
-    _canvasColor[0] = (float)color.red() / 255.0;
-    _canvasColor[1] = (float)color.green() / 255.0;
-    _canvasColor[2] = (float)color.blue() / 255.0;
-    glClearColor(_canvasColor[0], _canvasColor[1], _canvasColor[2], 1.0);
+    m_canvasColor[Red] = (float)color.red() / 255.0;
+    m_canvasColor[Green] = (float)color.green() / 255.0;
+    m_canvasColor[Blue] = (float)color.blue() / 255.0;
+    glClearColor(m_canvasColor[Red], m_canvasColor[Green], m_canvasColor[Blue], 1.0);
     if (update)
         updateGL();
 }
@@ -1240,7 +1240,7 @@ void QGLImageViewer::initializeGL()
 
     glEnable(GL_LINE_STIPPLE);
 
-    glClearColor(_canvasColor[0], _canvasColor[1], _canvasColor[2], 1.0);
+    glClearColor(m_canvasColor[Red], m_canvasColor[Green], m_canvasColor[Blue], 1.0);
 
 //     glEnable( GL_CULL_FACE );    // don't need Z testing for convex objects
 
@@ -2159,41 +2159,41 @@ void QGLImageViewer::setScaleTarget(const QPoint &spot)
 
 void QGLImageViewer::hideMessage()
 {
-    if (_messageTimeOut != 0) {
-        if (_messageTimeOut < 0) { // animate!
+    if (m_messageTimeOut != 0) {
+        if (m_messageTimeOut < 0) { // animate!
             ++_activeAnimations;
             ensureTimerIsActive();
         }
-        _messageTimeOut = 300 / _fpsDelay;
+        m_messageTimeOut = 300 / _fpsDelay;
     }
 }
 
 void QGLImageViewer::message(int x, int y, QString message, int msecs, const QColor *color)
 {
     if (!color) {
-        _messageColor[0] = (float)palette().color(QPalette::Active, QPalette::Foreground).red() / 255.0;
-        _messageColor[1] = (float)palette().color(QPalette::Active, QPalette::Foreground).green() / 255.0;
-        _messageColor[2] = (float)palette().color(QPalette::Active, QPalette::Foreground).blue() / 255.0;
+        m_messageColor[Red] = (float)palette().color(QPalette::Active, QPalette::Foreground).red() / 255.0;
+        m_messageColor[Green] = (float)palette().color(QPalette::Active, QPalette::Foreground).green() / 255.0;
+        m_messageColor[Blue] = (float)palette().color(QPalette::Active, QPalette::Foreground).blue() / 255.0;
     } else {
-        _messageColor[0] = (float)color->red() / 255.0;
-        _messageColor[1] = (float)color->green() / 255.0;
-        _messageColor[2] = (float)color->blue() / 255.0;
+        m_messageColor[Red] = (float)color->red() / 255.0;
+        m_messageColor[Green] = (float)color->green() / 255.0;
+        m_messageColor[Blue] = (float)color->blue() / 255.0;
     }
-    if (_messageTimeOut > 0) { // stop message
+    if (m_messageTimeOut > 0) { // stop message
         --_activeAnimations;
     }
-    _message = message.split("\n");
-    if (_message.isEmpty())
-        _messageTimeOut = 0;
+    m_message = message.split("\n");
+    if (m_message.isEmpty())
+        m_messageTimeOut = 0;
     else
-        _messageTimeOut = -1;
-    _messagePos = QPoint(x, y + QFontInfo(font()).pixelSize());
-    if (_messageTimeOut && msecs > 0) { // animate!
-        _messageTimeOut = msecs / _fpsDelay;
+        m_messageTimeOut = -1;
+    m_messagePos = QPoint(x, y + QFontInfo(font()).pixelSize());
+    if (m_messageTimeOut && msecs > 0) { // animate!
+        m_messageTimeOut = msecs / _fpsDelay;
         ++_activeAnimations;
         ensureTimerIsActive();
     } else {
-        _messageColor[3] = 1.0;
+        m_messageColor[Alpha] = 1.0;
         updateGL();
     }
 }

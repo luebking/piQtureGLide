@@ -43,6 +43,10 @@ typedef struct {
 * The 3 axis of space
 */
 enum Axis {X = 0, Y, Z};
+/**
+* The 4 channels of color
+*/
+enum Channel {Red = 0, Green, Blue, Alpha};
 
 /**
  * The usage should be pretty simple. You load images and rotate, scale, move tint and fade them by your needs. \n
@@ -394,10 +398,10 @@ private:
 
     Attribute m_scale, m_translation, m_rotation;
 
-    QStringList _message;
-    QPoint _messagePos;
-    int _messageTimeOut;
-    GLfloat _messageColor[4];
+    QStringList m_message;
+    QPoint m_messagePos;
+    int m_messageTimeOut;
+    GLfloat m_messageColor[4];
 
     QPoint _lastPos;
     float _scaleTarget[2];
@@ -406,7 +410,7 @@ private:
     int _activeAnimations;
     int _timer;
 
-    float _canvasColor[3];
+    float m_canvasColor[3];
 
     /* HUD rect */
     int _rectCoords[4];
@@ -513,9 +517,9 @@ public:
     */
     inline void setInternalColor(const QColor color)
     {
-        m_color.internal[0] = ((float)color.red()) / 255.0;
-        m_color.internal[1] = ((float)color.green()) / 255.0;
-        m_color.internal[2] = ((float)color.blue()) / 255.0;
+        m_color.internal[Red] = ((float)color.red()) / 255.0;
+        m_color.internal[Green] = ((float)color.green()) / 255.0;
+        m_color.internal[Blue] = ((float)color.blue()) / 255.0;
     }
 
     /**
@@ -524,7 +528,7 @@ public:
     */
     inline QColor color() const
     {
-        return QColor((int)(m_color.value[0] * 255), (int)(m_color.value[1] * 255), (int)(m_color.value[2] * 255));
+        return QColor((int)(m_color.value[Red] * 255), (int)(m_color.value[Green] * 255), (int)(m_color.value[Blue] * 255));
     }
 
     /**
