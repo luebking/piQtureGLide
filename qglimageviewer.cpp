@@ -1008,6 +1008,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         return;
     }
     int allAnims = 0;
+    bool perhapsJustPendingMessage = false;
     // view ========
     if (_activeAnimations) {
         // scale, move, rotate
@@ -1020,6 +1021,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
             _messageColor[3] += (float)_fpsDelay / 300.0;
             _messageColor[3] = QMIN(_messageColor[3], (float)_messageTimeOut * _fpsDelay / 300.0);
             _messageColor[3] = CLAMP(_messageColor[3], 0.0, 1.0);
+            perhapsJustPendingMessage = _messageColor[3] == 1.0;
             if (_messageTimeOut == 0)
                 --_activeAnimations;
         }
@@ -1030,6 +1032,7 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         // images ========
         if (!it->_activeAnimations)
             continue;
+        perhapsJustPendingMessage = false;
         // scale, move, rotate
         handleAnimationsPrivate(it->m_scale, it->_activeAnimations);
         handleAnimationsPrivate(it->m_translation, it->_activeAnimations);
@@ -1112,7 +1115,8 @@ void QGLImageViewer::timerEvent(QTimerEvent *te)
         _timer = 0;
     }
     _animCounter += 0.1;
-    QGLWidget::updateGL();
+    if (!perhapsJustPendingMessage || allAnims > 1)
+        QGLWidget::updateGL();
 }
 
 void QGLImageViewer::paintGL()
