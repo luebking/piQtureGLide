@@ -2155,10 +2155,12 @@ void QGLImageViewer::setScaleTarget(const QPoint &spot)
 
 void QGLImageViewer::hideMessage()
 {
-    _messageTimeOut = 300 / _fpsDelay;
-    if (_messageTimeOut < 0) { // stop message
-        ++_activeAnimations;
-        ensureTimerIsActive();
+    if (_messageTimeOut != 0) {
+        if (_messageTimeOut < 0) { // animate!
+            ++_activeAnimations;
+            ensureTimerIsActive();
+        }
+        _messageTimeOut = 300 / _fpsDelay;
     }
 }
 
@@ -2175,16 +2177,17 @@ void QGLImageViewer::message(int x, int y, QString message, int msecs, const QCo
     }
     if (_messageTimeOut > 0) { // stop message
         --_activeAnimations;
-        _messageTimeOut = -1;
     }
     _message = message.split("\n");
+    if (_message.isEmpty())
+        _messageTimeOut = 0;
+    else
+        _messageTimeOut = -1;
     _messagePos = QPoint(x, y + QFontInfo(font()).pixelSize());
-    if (msecs > 0) {
+    if (_messageTimeOut && msecs > 0) { // animate!
         _messageTimeOut = msecs / _fpsDelay;
-        if (_messageTimeOut > 0) { // animate!
-            ++_activeAnimations;
-            ensureTimerIsActive();
-        }
+        ++_activeAnimations;
+        ensureTimerIsActive();
     } else {
         _messageColor[3] = 1.0;
         updateGL();
