@@ -119,7 +119,9 @@ private:
     int _effect, _lastDirection;
     bool _animationDone;
     QTimer *transitionFinisher;
+
     int m_touchMode;
+    int m_animationTime;
     bool dont_dragswitch;
 
 private:
@@ -168,11 +170,11 @@ private slots:
     void zoom(int dir); void resetZoomSlider();
     inline void maxW()
     {
-        maxW(520);
+        maxW(m_animationTime);
     };
     inline void resetView()
     {
-        resetView(520);
+        resetView(m_animationTime);
     }
 
     void r90cw(); void r90ccw();

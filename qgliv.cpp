@@ -134,6 +134,7 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
     transitionFinisher->setSingleShot(true);
     connect(transitionFinisher, SIGNAL(timeout()), this, SLOT(finishImageChange()));
     _oldImage = 0L;
+    m_animationTime = 300;
 
     QStringList args = QCoreApplication::arguments();
 
@@ -974,54 +975,53 @@ QGLIV::changeImage(int direction)
         return false; // no history B.C. ;-P
 
     // display change
-    int delay = 340;
+    int delay = m_animationTime + 20;
     _animationDone = false;
     QGLImageView::Axis axis = QGLImageView::X;
     switch (_effect) {
     default:
     case Crossfade:
-        delay = (features & Diashow) ? 0 : 520;
-        autoSize() ? maxW(delay) : resetView(delay);
+        delay = (features & Diashow) ? 0 : m_animationTime;
+        autoSize() ? maxW(0) : resetView(m_animationTime);
         current->image->setAlpha(0.0);
         current->image->show(false);
-        _oldImage->setAlpha(0.0, 520);
-        current->image->setAlpha(100.0, 520);
-        delay = 540;
+        _oldImage->setAlpha(0.0, m_animationTime);
+        current->image->setAlpha(100.0, m_animationTime);
         break;
     case FadeOutAndIn:
-        autoSize() ? maxW(520) : resetView(520);
+        autoSize() ? maxW(0) : resetView(m_animationTime);
         current->image->setAlpha(0.0);
-        _oldImage->setAlpha(0.0, 320);
+        _oldImage->setAlpha(0.0, m_animationTime);
         break;
     case HorizontalRotation:
         axis = QGLImageView::Y;
     case VerticalRotation:
-        autoSize() ? maxW(520) : resetView(520);
-        _oldImage->rotate(axis, 90.0 * sign, 320);
+        autoSize() ? maxW(0) : resetView(m_animationTime);
+        _oldImage->rotate(axis, 90.0 * sign, m_animationTime);
         current->image->rotate(axis, -90.0 * sign);
         break;
     case ZSlide:
         axis = QGLImageView::Z;
-        sign = -sign;
         current->image->setAlpha(0.0);
         current->image->resize(current->image->basicWidth(), current->image->basicHeight(), 0, 100.0, 100.0);
-        _oldImage->setAlpha(0.0, 420 - sign * 100);
-        current->image->setAlpha(100.0, 420 + sign * 100);
+        _oldImage->setAlpha(0.0, m_animationTime - sign * 100);
+        current->image->setAlpha(100.0, m_animationTime + sign * 100);
     case VerticalSlide:
         if (axis == QGLImageView::X) {
             axis = QGLImageView::Y;
         }
     case HorizontalSlide:
-        if (axis != QGLImageView::Z) {
-            autoSize() ? maxW(200) : resetView(200);
-        }
-        if (m_touchMode)
-            sign = -sign;
+        autoSize() ? maxW(0) : resetView(2*m_animationTime);
         current->image->hide(false);
-        current->image->moveTo(axis, -100.0 * sign);
-        _oldImage->moveTo(axis, (150.0 * sign)*_oldImage->scaleFactor(axis), 400);
-        _oldImage->setAlpha(0.0, 400);
-        delay = 220;
+        if (axis == QGLImageView::Z) {
+            current->image->moveTo(axis, 300.0 * sign);
+            _oldImage->moveTo(axis, (-300.0 * sign)*_oldImage->scaleFactor(axis), m_animationTime);
+        } else {
+            current->image->moveTo(axis, 100.0 * sign);
+            _oldImage->moveTo(axis, (-150.0 * sign)*_oldImage->scaleFactor(axis), m_animationTime);
+        }
+        _oldImage->setAlpha(0.0, m_animationTime);
+        delay = m_animationTime/2;
     }
 
     _effect *= sign;
@@ -1057,26 +1057,27 @@ void QGLIV::finishImageChange()
     case FadeOutAndIn:
         _oldImage->setAlpha(100.0);
         current->image->show(false);
-        current->image->setAlpha(100.0, 320);
+        current->image->setAlpha(100.0, m_animationTime);
         break;
     case HorizontalRotation:
         axis = QGLImageView::Y;
     case VerticalRotation:
         _oldImage->rotateTo(0, 0, 0, false);
         current->image->show(false);
-        current->image->rotate(axis, sign * 90.0, 320);
+        current->image->rotate(axis, sign * 90.0, m_animationTime);
         break;
     case ZSlide:
-        autoSize() ? maxW(160) : resetView(320);
-        _oldImage->setAlpha(100.0);
         axis = QGLImageView::Z;
+        // fall through
     case VerticalSlide:
-        if (axis == QGLImageView::X) axis = QGLImageView::Y;
+        if (axis == QGLImageView::X)
+            axis = QGLImageView::Y;
+        // fall through
     case HorizontalSlide:
         _oldImage->moveTo(axis, 50.0 * _oldImage->scaleFactor(axis));
         _oldImage->setAlpha(100.0);
         current->image->show(false);
-        current->image->moveTo(axis, 50.0, 520);
+        current->image->moveTo(axis, 50.0, m_animationTime+20);
     }
 
     if (showMessage())

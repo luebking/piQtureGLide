@@ -427,12 +427,12 @@ void QGLIV::XRotate(int r)
 
 void QGLIV::resetRotation()
 {
-    view->rotateTo(QGLImageView::X, 0.0, 520);
-    view->rotateTo(QGLImageView::Y, 0.0, 520);
-    view->rotateTo(QGLImageView::Z, 0.0, 520);
-    current->image->rotateTo(QGLImageView::X, 0.0, 520);
-    current->image->rotateTo(QGLImageView::Y, 0.0, 520);
-    current->image->rotateTo(QGLImageView::Z, 0.0, 520);
+    view->rotateTo(QGLImageView::X, 0.0, m_animationTime);
+    view->rotateTo(QGLImageView::Y, 0.0, m_animationTime);
+    view->rotateTo(QGLImageView::Z, 0.0, m_animationTime);
+    current->image->rotateTo(QGLImageView::X, 0.0, m_animationTime);
+    current->image->rotateTo(QGLImageView::Y, 0.0, m_animationTime);
+    current->image->rotateTo(QGLImageView::Z, 0.0, m_animationTime);
 
     DO_BLOCKED(ui.rotateX, setValue(0));
     DO_BLOCKED(ui.rotateY, setValue(0));
@@ -474,7 +474,7 @@ void QGLIV::zoom(int dir)
         view->scale(QGLImageView::Y, 100.0, 0);
         return;
     }
-    ui.zoomTimer->start(520);
+    ui.zoomTimer->start(m_animationTime);
 }
 
 void QGLIV::resetZoomSlider()
@@ -594,45 +594,45 @@ void QGLIV::moveDown()
 /** rotate by 90° clockwise*/
 void QGLIV::r90cw()
 {
-    view->rotate(QGLImageView::Z, 90.0, 520);
+    view->rotate(QGLImageView::Z, 90.0, m_animationTime);
 }
 /** rotate by 90° counterclockwise*/
 void QGLIV::r90ccw()
 {
-    view->rotate(Z, -90.0, 520);
+    view->rotate(Z, -90.0, m_animationTime);
 }
 
 void QGLIV::flipLeft()
 {
-    view->rotate(QGLImageView::Y, -180.0, 520);
+    view->rotate(QGLImageView::Y, -180.0, m_animationTime);
 }
 void QGLIV::flipRight()
 {
-    view->rotate(QGLImageView::Y, 180.0, 520);
+    view->rotate(QGLImageView::Y, 180.0, m_animationTime);
 }
 void QGLIV::flipUp()
 {
-    view->rotate(QGLImageView::X, -180.0, 520);
+    view->rotate(QGLImageView::X, -180.0, m_animationTime);
 }
 void QGLIV::flipDown()
 {
-    view->rotate(QGLImageView::X, 180.0, 520);
+    view->rotate(QGLImageView::X, 180.0, m_animationTime);
 }
 
 /** zoom ( in ) in by 125%*/
 void QGLIV::zoomIn()
 {
     dont_dragswitch = true;
-    view->scale(QGLImageView::X, 125.0, 520);
-    view->scale(QGLImageView::Y, 125.0, 520);
+    view->scale(QGLImageView::X, 125.0, m_animationTime);
+    view->scale(QGLImageView::Y, 125.0, m_animationTime);
 }
 
 /** zoom ( out ) in by 80% == 1/125%*/
 void QGLIV::zoomOut()
 {
     dont_dragswitch = true;
-    view->scale(QGLImageView::X, 80.0, 520);
-    view->scale(QGLImageView::Y, 80.0, 520);
+    view->scale(QGLImageView::X, 80.0, m_animationTime);
+    view->scale(QGLImageView::Y, 80.0, m_animationTime);
 }
 
 void QGLIV::gammaUp()
@@ -651,8 +651,8 @@ void QGLIV::gammaDown()
 
 void QGLIV::resetColors()
 {
-    current->image->setAlpha(100.0, 520);
-    current->image->tint(Qt::white, 520);
+    current->image->setAlpha(100.0, m_animationTime);
+    current->image->tint(Qt::white, m_animationTime);
 }
 
 void QGLIV::invert()
