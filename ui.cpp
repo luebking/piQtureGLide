@@ -281,8 +281,8 @@ void QGLIV::setupUI(const QString &startDir)
     ui.viewBar->addAction(bwdAction);
 
     action = ui.viewBar->addAction(" > ", this, SLOT(setDiaShow(bool)));
-    action->setShortcut(Qt::CTRL + Qt::Key_D); action->setCheckable(true);
-    action->setToolTip(tooltip("Diashow", QStringList("[Ctrl + D]")));
+    action->setShortcut(Qt::Key_Space); action->setCheckable(true);
+    action->setToolTip(tooltip("Diashow", QStringList("[Space]")));
     view->addAction(action);
 
     ui.viewBar->addAction(fwdAction);

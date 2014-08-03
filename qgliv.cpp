@@ -392,8 +392,14 @@ void QGLIV::setDiaShow(bool active)
         features |= Diashow;
         m_wantedDirection = 1;
         QTimer::singleShot(diaTime, this, SLOT(tryChangeImage()));
-    } else
+        m_animationTime = qMin(1500, 15*diaTime/100);
+        current->image->scale(QGLImageView::X, 125.0, diaTime);
+        current->image->scale(QGLImageView::Y, 125.0, diaTime);
+    } else {
         features &= ~Diashow;
+        m_animationTime = 300;
+        autoSize() ? maxW(m_animationTime) : resetView(m_animationTime);
+    }
 }
 
 QStringList
@@ -971,27 +977,25 @@ QGLIV::changeImage(int direction)
 
     // display change
     int delay = m_animationTime + 20;
+    int resetTime = m_animationTime;
     _animationDone = false;
     QGLImageView::Axis axis = QGLImageView::X;
     switch (m_transitionType) {
     default:
     case Crossfade:
-        delay = (features & Diashow) ? 0 : m_animationTime;
-        autoSize() ? maxW(0) : resetView(m_animationTime);
+        delay = m_animationTime;
         current->image->setAlpha(0.0);
         current->image->show(false);
         m_oldImage->setAlpha(0.0, m_animationTime);
         current->image->setAlpha(100.0, m_animationTime);
         break;
     case FadeOutAndIn:
-        autoSize() ? maxW(0) : resetView(m_animationTime);
         current->image->setAlpha(0.0);
         m_oldImage->setAlpha(0.0, m_animationTime);
         break;
     case HorizontalRotation:
         axis = QGLImageView::Y;
     case VerticalRotation:
-        autoSize() ? maxW(0) : resetView(m_animationTime);
         m_oldImage->rotate(axis, 90.0 * sign, m_animationTime);
         current->image->rotate(axis, -90.0 * sign);
         break;
@@ -1006,7 +1010,7 @@ QGLIV::changeImage(int direction)
             axis = QGLImageView::Y;
         }
     case HorizontalSlide:
-        autoSize() ? maxW(0) : resetView(2*m_animationTime);
+        resetTime = 2*m_animationTime;
         current->image->hide(false);
         if (axis == QGLImageView::Z) {
             current->image->moveTo(axis, 300.0 * sign);
@@ -1017,6 +1021,13 @@ QGLIV::changeImage(int direction)
         }
         m_oldImage->setAlpha(0.0, m_animationTime);
         delay = m_animationTime/2;
+    }
+
+    autoSize() ? maxW(0) : resetView(resetTime);
+
+    if (features & Diashow) {
+        current->image->scale(QGLImageView::X, 125.0, diaTime + delay);
+        current->image->scale(QGLImageView::Y, 125.0, diaTime + delay);
     }
 
     m_transitionType *= sign;
@@ -1090,6 +1101,11 @@ void QGLIV::finishImageChange()
         unload(next);
         next = new Image(0, current->index + 1);
         load(next);
+    }
+
+    if (features & Diashow) {
+        m_oldImage->scale(QGLImageView::X, 80.0);
+        m_oldImage->scale(QGLImageView::Y, 80.0);
     }
 
     m_oldImage = NULL;
