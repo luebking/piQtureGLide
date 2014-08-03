@@ -107,7 +107,7 @@ getNumPoly(QString file)
 Image::Image(QGLImage *image, int idx)
 {
     this->image = image;
-    qGlImage = 0;
+    qGlImage = NULL;
     this->index = idx;
 }
 
@@ -124,16 +124,16 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
     filter.setPatternSyntax(QRegExp::Wildcard);
     filter.setCaseSensitivity(Qt::CaseInsensitive);
 
-    current = prev = next = 0;
+    current = prev = next = NULL;
     features = ShowMessage;
     diaTime = 10000;
     transitionEffect = 0;
-    _lastDirection = 0;
+    m_wantedDirection = 0;
     _animationDone = true;
     transitionFinisher = new QTimer(this);
     transitionFinisher->setSingleShot(true);
     connect(transitionFinisher, SIGNAL(timeout()), this, SLOT(finishImageChange()));
-    _oldImage = 0L;
+    m_oldImage = NULL;
     m_animationTime = 300;
 
     QStringList args = QCoreApplication::arguments();
@@ -316,15 +316,13 @@ static bool firstInit = true;
 void
 QGLIV::init()
 {
-    unload(prev); unload(next);
-    prev = next = 0;
+    unload(prev);
     // prepare the first image
     prev = new Image;
 
     bool reloadCurrent = true;
     if (firstInit || _firstFile.isNull()) {
         unload(current);
-        current = 0;
         current = new Image(0, 0);
     } else {
         reloadCurrent = false;
@@ -332,6 +330,7 @@ QGLIV::init()
             current->index = files.indexOf(_firstFile);
     }
 
+    unload(next);
     next = new Image;
 
     if (reloadCurrent) {
@@ -362,7 +361,7 @@ QGLIV::init()
         load(next);
         if (features & Diashow) {
             QTimer::singleShot(1000, this, SLOT(maxW()));
-            _lastDirection = 1;
+            m_wantedDirection = 1;
             QTimer::singleShot(diaTime, this, SLOT(tryChangeImage()));
         } else if (features & Cycle)
             load(prev);
@@ -391,7 +390,7 @@ void QGLIV::setDiaShow(bool active)
 {
     if (active) {
         features |= Diashow;
-        _lastDirection = 1;
+        m_wantedDirection = 1;
         QTimer::singleShot(diaTime, this, SLOT(tryChangeImage()));
     } else
         features &= ~Diashow;
@@ -484,15 +483,13 @@ QGLIV::setFilter(const QString &string)
     }
     if (newIndex < 0) // not valid or required
         newIndex = current->index;
-//     qDebug() << "filter" << string << growing << current->index << "->" << newIndex;
+
     if (growing || prev->index > newIndex || !filterMatches(prev->index)) {
-//         qDebug() << "-> prev";
         unload(prev);
         prev = new Image(0, newIndex - 1 * (newIndex >= current->index));
         load(prev);
     }
     if (growing || next->index < newIndex || !filterMatches(next->index)) {
-//         qDebug() << "-> next";
         unload(next);
         next = new Image(0, newIndex + 1 * (newIndex <= current->index));
         load(next);
@@ -553,7 +550,7 @@ QGLIV::unload(Image *image)
         return;
     if (image->image) {
         view->remove(image->image->id());
-        image->image = 0;
+        image->image = NULL;
     }
     delete image;
 }
@@ -699,7 +696,8 @@ QGLIV::addToView(Image *image)
     image->image = &view->images().last();
     image->image->addShader(shader_vert, false);
     image->image->addShader(shader_frag);
-    delete image->qGlImage; image->qGlImage = 0;
+    delete image->qGlImage;
+    image->qGlImage = NULL;
 }
 
 void
@@ -817,9 +815,9 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
         if (e->type() == QEvent::Gesture) {
             static bool newPinch = true;
             bool havePinch = false;
-            const QPinchGesture *pinchG = 0;
-//             const QSwipeGesture *swipeG = 0;
-//             const QPanGesture *panG = 0;
+            const QPinchGesture *pinchG = NULL;
+//             const QSwipeGesture *swipeG = NULL;
+//             const QPanGesture *panG = NULL;
             foreach (const QGesture *g, static_cast<QGestureEvent*>(e)->activeGestures()) {
                 if (!pinchG)
                     pinchG = qobject_cast<const QPinchGesture*>(g);
@@ -918,15 +916,15 @@ QGLIV::eventFilter(QObject *o, QEvent * e)
 void
 QGLIV::tryChangeImage()
 {
-    if (!_lastDirection)
+    if (!m_wantedDirection)
         return;
     if (cacheIsReady())   // TODO: cacheIsReady( direction )? requires cancelling the thread and ensure the map isn't halfwise borked...
-        changeImage(_lastDirection);
+        changeImage(m_wantedDirection);
     else
         QTimer::singleShot(50, this, SLOT(tryChangeImage()));
 }
 
-#define BREAK_BECAUSE(_STRING_) { view->message( 20, 20, _STRING_, 2000 ); _lastDirection = 0; return false; } //
+#define BREAK_BECAUSE(_STRING_) { view->message( 20, 20, _STRING_, 2000 ); m_wantedDirection = 0; return false; } //
 
 bool
 QGLIV::changeImage(int direction)
@@ -941,13 +939,10 @@ QGLIV::changeImage(int direction)
         BREAK_BECAUSE("This is the first image");
 
     if (!cacheIsReady()) {
-        if (_lastDirection)
-            view->message(20, 20, "Wait longer...", 0);
-        else {
-            _lastDirection = direction;
+        if (m_wantedDirection)
             view->message(20, 20, "Please wait...", 0);
-            QTimer::singleShot(50, this, SLOT(tryChangeImage()));
-        }
+        m_wantedDirection = direction;
+        tryChangeImage();
         return true;
     }
 
@@ -956,11 +951,11 @@ QGLIV::changeImage(int direction)
         finishImageChange();
     }
 
-    _lastDirection = 0;
-    _oldImage = current->image;
+    m_wantedDirection = 0;
+    m_oldImage = current->image;
 
     int sign = 1;
-    _effect = transitionEffect ? transitionEffect : random() % KnownEffects;
+    m_transitionType = transitionEffect ? transitionEffect : random() % KnownEffects;
 
     if (direction > 0) {
         // fwd
@@ -978,33 +973,33 @@ QGLIV::changeImage(int direction)
     int delay = m_animationTime + 20;
     _animationDone = false;
     QGLImageView::Axis axis = QGLImageView::X;
-    switch (_effect) {
+    switch (m_transitionType) {
     default:
     case Crossfade:
         delay = (features & Diashow) ? 0 : m_animationTime;
         autoSize() ? maxW(0) : resetView(m_animationTime);
         current->image->setAlpha(0.0);
         current->image->show(false);
-        _oldImage->setAlpha(0.0, m_animationTime);
+        m_oldImage->setAlpha(0.0, m_animationTime);
         current->image->setAlpha(100.0, m_animationTime);
         break;
     case FadeOutAndIn:
         autoSize() ? maxW(0) : resetView(m_animationTime);
         current->image->setAlpha(0.0);
-        _oldImage->setAlpha(0.0, m_animationTime);
+        m_oldImage->setAlpha(0.0, m_animationTime);
         break;
     case HorizontalRotation:
         axis = QGLImageView::Y;
     case VerticalRotation:
         autoSize() ? maxW(0) : resetView(m_animationTime);
-        _oldImage->rotate(axis, 90.0 * sign, m_animationTime);
+        m_oldImage->rotate(axis, 90.0 * sign, m_animationTime);
         current->image->rotate(axis, -90.0 * sign);
         break;
     case ZSlide:
         axis = QGLImageView::Z;
         current->image->setAlpha(0.0);
         current->image->resize(current->image->basicWidth(), current->image->basicHeight(), 0, 100.0, 100.0);
-        _oldImage->setAlpha(0.0, m_animationTime - sign * 100);
+        m_oldImage->setAlpha(0.0, m_animationTime - sign * 100);
         current->image->setAlpha(100.0, m_animationTime + sign * 100);
     case VerticalSlide:
         if (axis == QGLImageView::X) {
@@ -1015,16 +1010,16 @@ QGLIV::changeImage(int direction)
         current->image->hide(false);
         if (axis == QGLImageView::Z) {
             current->image->moveTo(axis, 300.0 * sign);
-            _oldImage->moveTo(axis, (-300.0 * sign)*_oldImage->scaleFactor(axis), m_animationTime);
+            m_oldImage->moveTo(axis, (-300.0 * sign)*m_oldImage->scaleFactor(axis), m_animationTime);
         } else {
             current->image->moveTo(axis, 100.0 * sign);
-            _oldImage->moveTo(axis, (-150.0 * sign)*_oldImage->scaleFactor(axis), m_animationTime);
+            m_oldImage->moveTo(axis, (-150.0 * sign)*m_oldImage->scaleFactor(axis), m_animationTime);
         }
-        _oldImage->setAlpha(0.0, m_animationTime);
+        m_oldImage->setAlpha(0.0, m_animationTime);
         delay = m_animationTime/2;
     }
 
-    _effect *= sign;
+    m_transitionType *= sign;
     transitionFinisher->start(delay);
     QTimer::singleShot(1000, this, SLOT(setAnimationDone()));
     return true;
@@ -1032,9 +1027,10 @@ QGLIV::changeImage(int direction)
 
 void QGLIV::finishImageChange()
 {
-    if (!_oldImage)
+    if (!m_oldImage)
         return;
-    _oldImage->hide();
+
+    m_oldImage->hide();
 
     //     if ( current->image->hasAlpha() )
     //         view->setCanvas( Qt::gray );
@@ -1042,27 +1038,27 @@ void QGLIV::finishImageChange()
     //         view->setCanvas( Qt::black );
 
     int sign = 1;
-    if (_effect < 0) {
-        _effect = -_effect;
+    if (m_transitionType < 0) {
+        m_transitionType = -m_transitionType;
         sign = -1;
     }
 
 
     QGLImageView::Axis axis = QGLImageView::X;
-    switch (_effect) {
+    switch (m_transitionType) {
     default:
     case Crossfade:
-        _oldImage->setAlpha(100.0);
+        m_oldImage->setAlpha(100.0);
         break;
     case FadeOutAndIn:
-        _oldImage->setAlpha(100.0);
+        m_oldImage->setAlpha(100.0);
         current->image->show(false);
         current->image->setAlpha(100.0, m_animationTime);
         break;
     case HorizontalRotation:
         axis = QGLImageView::Y;
     case VerticalRotation:
-        _oldImage->rotateTo(0, 0, 0, false);
+        m_oldImage->rotateTo(0, 0, 0, false);
         current->image->show(false);
         current->image->rotate(axis, sign * 90.0, m_animationTime);
         break;
@@ -1074,8 +1070,8 @@ void QGLIV::finishImageChange()
             axis = QGLImageView::Y;
         // fall through
     case HorizontalSlide:
-        _oldImage->moveTo(axis, 50.0 * _oldImage->scaleFactor(axis));
-        _oldImage->setAlpha(100.0);
+        m_oldImage->moveTo(axis, 50.0 * m_oldImage->scaleFactor(axis));
+        m_oldImage->setAlpha(100.0);
         current->image->show(false);
         current->image->moveTo(axis, 50.0, m_animationTime+20);
     }
@@ -1085,23 +1081,23 @@ void QGLIV::finishImageChange()
 
     setWindowTitle(files.at(current->index));
 
-    if (prev && _oldImage == prev->image && !filterMatches(prev->index)) {
+    if (prev && m_oldImage == prev->image && !filterMatches(prev->index)) {
         unload(prev);
         prev = new Image(0, current->index - 1);
         load(prev);
     }
-    if (next && _oldImage == next->image && !filterMatches(next->index)) {
+    if (next && m_oldImage == next->image && !filterMatches(next->index)) {
         unload(next);
         next = new Image(0, current->index + 1);
         load(next);
     }
 
-    _oldImage = 0;
+    m_oldImage = NULL;
 
     emit imageChanged();
 
     if (features & Diashow) {
-        _lastDirection = 1;
+        m_wantedDirection = 1;
         QTimer::singleShot(diaTime, this, SLOT(tryChangeImage()));
     }
 }

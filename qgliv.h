@@ -115,8 +115,8 @@ private:
     int transitionEffect;
 
     // interslot transporters
-    QGLImage *_oldImage;
-    int _effect, _lastDirection;
+    QGLImage *m_oldImage;
+    int m_transitionType, m_wantedDirection;
     bool _animationDone;
     QTimer *transitionFinisher;
 
@@ -159,23 +159,27 @@ private slots:
     void saveSettings();
     void editImage();
     void setAsWallpaper();
-    void begin(); void bwd(); void fwd(); void end();
-    void flipLeft(); void flipRight();
-    void flipUp(); void flipDown();
+    void begin();
+    void bwd();
+    void fwd();
+    void end();
 
-    void moveLeft(); void moveRight();
-    void moveUp(); void moveDown();
+    void flipLeft();
+    void flipRight();
+    void flipUp();
+    void flipDown();
 
-    void zoomIn(); void zoomOut();
-    void zoom(int dir); void resetZoomSlider();
-    inline void maxW()
-    {
-        maxW(m_animationTime);
-    };
-    inline void resetView()
-    {
-        resetView(m_animationTime);
-    }
+    void moveLeft();
+    void moveRight();
+    void moveUp();
+    void moveDown();
+
+    void zoomIn();
+    void zoomOut();
+    void zoom(int dir);
+    void resetZoomSlider();
+    inline void maxW() { maxW(m_animationTime); }
+    inline void resetView() { resetView(m_animationTime); }
 
     void r90cw(); void r90ccw();
     void XRotate(int); void YRotate(int); void ZRotate(int);
@@ -186,20 +190,30 @@ private slots:
     void toggleUI();
     void toggleMessage();
 
-    void gammaUp(); void gammaDown();
+    void gammaUp();
+    void gammaDown();
 
     void setCanvasValue(int);
-    void redUp(); void redDown();
-    void greenUp(); void greenDown();
-    void blueUp(); void blueDown();
-    void alphaUp(); void alphaDown();
-    void invert(); void resetColors();
-    void setRed(int); void setGreen(int);
-    void setBlue(int); void setAlpha(int);
+    void redUp();
+    void redDown();
+    void greenUp();
+    void greenDown();
+    void blueUp();
+    void blueDown();
+    void alphaUp();
+    void alphaDown();
+    void invert();
+    void resetColors();
+    void setRed(int);
+    void setGreen(int);
+    void setBlue(int);
+    void setAlpha(int);
     void setGamma(int);
 
-    void blurLess(); void blurMore();
-    void tunnelLess(); void tunnelMore();
+    void blurLess();
+    void blurMore();
+    void tunnelLess();
+    void tunnelMore();
 };
 
 
