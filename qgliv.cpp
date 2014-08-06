@@ -1015,10 +1015,8 @@ QGLIV::changeImage(int direction)
         resetTime = 2*m_animationTime;
         current->image->hide(false);
         if (axis == QGLImageView::Z) {
-            current->image->moveTo(axis, 300.0 * sign);
             m_oldImage->moveTo(axis, (-300.0 * sign)*m_oldImage->scaleFactor(axis), m_animationTime);
         } else {
-            current->image->moveTo(axis, 100.0 * sign);
             m_oldImage->moveTo(axis, (-150.0 * sign)*m_oldImage->scaleFactor(axis), m_animationTime);
         }
         m_oldImage->setAlpha(0.0, m_animationTime);
@@ -1085,6 +1083,11 @@ void QGLIV::finishImageChange()
     case HorizontalSlide:
         m_oldImage->moveTo(axis, 50.0 * m_oldImage->scaleFactor(axis));
         m_oldImage->setAlpha(100.0);
+        if (axis == QGLImageView::Z) {
+            current->image->moveTo(axis, 300.0 * sign);
+        } else {
+            current->image->moveTo(axis, 100.0 * sign);
+        }
         current->image->show(false);
         current->image->moveTo(axis, 50.0, m_animationTime+20);
     }
