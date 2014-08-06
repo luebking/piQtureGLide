@@ -883,7 +883,7 @@ QGLImageViewer::QGLImageViewer(QWidget* parent, const char* name, float fps, boo
     , _activeAnimations(0)
     , _timer(0)
     , _pbuffer(0L)
-    , _interactive(interactive)
+    , m_interactive(interactive)
     , _animated(false)
     , _animCounter(0.0)
 {
@@ -1281,7 +1281,7 @@ void QGLImageViewer::resizeGL(int w, int h)
 
 void QGLImageViewer::mousePressEvent(QMouseEvent * e)
 {
-    if (!_interactive)
+    if (!m_interactive)
         return;
     _lastPos = e->pos();
     _scaleTarget[X] = m_translation.value[X] - (2.0 * e->pos().x() / width() - 1.0) / (m_scale.value[X] * 3.0 / -m_translation.value[Z]);
@@ -1290,18 +1290,18 @@ void QGLImageViewer::mousePressEvent(QMouseEvent * e)
 
 void QGLImageViewer::mouseReleaseEvent(QMouseEvent *)
 {
-    if (!_interactive)
-        return;
-    setCursor(Qt::ArrowCursor);
+    if (m_interactive && m_showCursor)
+        setCursor(Qt::ArrowCursor);
 }
 
 void QGLImageViewer::mouseMoveEvent(QMouseEvent * e)
 {
-    if (!_interactive)
+    if (!m_interactive)
         return;
 
     if (e->modifiers() & Qt::ControlModifier) { // rotate
-        setCursor(Qt::SizeAllCursor);
+        if (m_showCursor)
+            setCursor(Qt::SizeAllCursor);
         int sign = ((int)m_rotation.value[X] % 360 > 90 && (int)m_rotation.value[X] % 360 < 270) ? -1 : 1;
         if (e->modifiers() & Qt::ShiftModifier) { // X-Axis
             rotate(X, (float)(e->pos().y() - _lastPos.y()) / 3.0);
@@ -1356,7 +1356,7 @@ void QGLImageViewer::mouseMoveEvent(QMouseEvent * e)
 
 void QGLImageViewer::wheelEvent(QWheelEvent *)
 {
-//     if (!_interactive)
+//     if (!m_interactive)
 //         return;
 }
 
@@ -2155,6 +2155,12 @@ void QGLImageViewer::setScaleTarget(const QPoint &spot)
 {
     _scaleTarget[X] = m_translation.value[X] - (2.0 * spot.x() / width() - 1.0) / (m_scale.value[X] * 3.0 / -m_translation.value[Z]);
     _scaleTarget[Y] = m_translation.value[Y] + (2.0 * spot.y() - height()) / ((m_scale.value[Y] * 3.0 / -m_translation.value[Z]) * width());
+}
+
+void QGLImageViewer::setCursorVisible(bool b)
+{
+    m_showCursor = b;
+    setCursor(m_showCursor ? Qt::ArrowCursor : Qt::BlankCursor);
 }
 
 void QGLImageViewer::hideMessage()

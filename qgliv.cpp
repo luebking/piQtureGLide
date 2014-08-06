@@ -279,6 +279,7 @@ QGLIV::QGLIV(QWidget* parent, const char* name) : QWidget(parent)
 
     QSettings settings("piQtureGLide");
     m_touchMode = settings.value("TouchMode", 0).toInt();
+    view->setCursorVisible(!m_touchMode);
     if (m_touchMode) {
         QFont fnt = QApplication::font();
         fnt.setPointSize(2*fnt.pointSize());
@@ -388,6 +389,7 @@ void QGLIV::setCycle(bool active)
 
 void QGLIV::setDiaShow(bool active)
 {
+    view->setCursorVisible(!active);
     if (active) {
         features |= Diashow;
         m_wantedDirection = 1;

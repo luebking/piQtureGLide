@@ -94,7 +94,7 @@ public:
     */
     inline void setInteractive(bool interactive = true)
     {
-        _interactive = interactive;
+        m_interactive = interactive;
     }
 
     /**
@@ -219,6 +219,7 @@ public:
     void moveTo(float xPercent, float yPercent, float zPercent, bool update = true);
     void zoom(float percent, bool update = true);
     void setScaleTarget(const QPoint &spot);
+    void setCursorVisible(bool);
 
     /**
     * Display a message(string)
@@ -421,7 +422,8 @@ private:
     bool _rectLongLines;
 
     QGLPixelBuffer *_pbuffer;
-    bool _interactive;
+    bool m_interactive;
+    bool m_showCursor;
 
     ShaderList _shaders;
     bool _providesShaders;
