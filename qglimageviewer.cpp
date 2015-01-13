@@ -2196,6 +2196,7 @@ void QGLImageViewer::message(int x, int y, QString message, int msecs, const QCo
     m_messagePos = QPoint(x, y + QFontInfo(font()).pixelSize());
     if (m_messageTimeOut && msecs > 0) { // animate!
         m_messageTimeOut = msecs / _fpsDelay;
+        QGLWidget::updateGL();
         ++_activeAnimations;
         ensureTimerIsActive();
     } else {
