@@ -2225,7 +2225,7 @@ void QGLImageViewer::updateGL()
         return;
     static QElapsedTimer t;
     const int elapsed = t.elapsed();
-    if (elapsed < fpsDelay()) {
+    if (t.isValid() && elapsed < fpsDelay()) {
         _timer = startTimer(fpsDelay() - elapsed);
     } else {
         QGLWidget::updateGL();
